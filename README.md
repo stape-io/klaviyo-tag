@@ -1,2 +1,1 @@
-# klaviyo-tag
-Klaviyo tag for Google Tag Manager Server Side
+# Klaviyo tag for Google Tag Manager Server Side

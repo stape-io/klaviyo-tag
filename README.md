@@ -1,6 +1,12 @@
 # Klaviyo tag for Google Tag Manager Server Side
 
-TBD
+Klaviyo Tag for the Google Tag Manager server container is a custom tag that will help you to add new users, send events and parameters from your site to Klaviyo.
+
+
+## How to use Klaviyo tag
+
+- [Integrate Klaviyo with your website using Google Tag Manager Server container](https://gtm-server.com/integrate-klaviyo-with-your-website-using-google-tag-manager-server-container/)
+
 
 ## Open Source
 

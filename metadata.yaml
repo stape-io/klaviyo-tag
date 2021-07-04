@@ -1,4 +1,4 @@
-homepage: "https://gtm-server.com/"
+homepage: "https://stape.io/"
 versions:
   - sha: ad2d46aacb8c5d767b07435fd33a79ee9d3e2d2c
     changeNotes: Added ability to track the Active on Site event.

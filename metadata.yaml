@@ -1,5 +1,7 @@
 homepage: "https://stape.io/"
 versions:
+  - sha: dbd5d5010ffdd529c588ec381736f22bdd50cad3
+    changeNotes: Update for Stape.
   - sha: ad2d46aacb8c5d767b07435fd33a79ee9d3e2d2c
     changeNotes: Added ability to track the Active on Site event.
   - sha: 124265e8a3666abc0b34e18c7352d72126d8afe9

@@ -51,13 +51,15 @@ ___TEMPLATE_PARAMETERS___
     "name": "email",
     "displayName": "Email",
     "simpleValueType": true,
-    "valueValidators": [
-      {
-        "type": "NON_EMPTY"
-      }
-    ],
     "alwaysInSummary": false,
     "help": "Email of the user who triggered this event"
+  },
+  {
+    "type": "CHECKBOX",
+    "name": "storeEmail",
+    "checkboxText": "Store email in cookies",
+    "simpleValueType": true,
+    "help": "Allow storing the email in cookies if it is provided and use it as a fallback if it is not provided for the current event."
   },
   {
     "type": "RADIO",
@@ -164,6 +166,8 @@ const encodeUriComponent = require('encodeUriComponent');
 const JSON = require('JSON');
 const toBase64 = require('toBase64');
 const getRemoteAddress = require('getRemoteAddress');
+const getCookieValues = require('getCookieValues');
+const setCookie = require('setCookie');
 
 const logToConsole = require('logToConsole');
 const getContainerVersion = require('getContainerVersion');
@@ -175,9 +179,7 @@ const allEventData = getAllEventData();
 let klaviyoEventData = {
   token: data.token,
   event: data.event,
-  customer_properties: {
-    '$email': data.email,
-  },
+  customer_properties: getCustomerProperties(),
   properties: {},
   time: makeInteger(getTimestampMillis()/1000)
 };
@@ -226,6 +228,49 @@ sendHttpRequest(url, (statusCode, headers, body) => {
   }
 }, {headers: {'X-Forwarded-For': getRemoteAddress()}, method: 'GET', timeout: 3500});
 
+
+function getCustomerProperties() {
+  let email = data.email;
+  if (email) {
+    if (data.storeEmail) {
+      storeCookie('email', email);
+    }
+
+    return {'$email': email};
+  }
+
+  let url = allEventData.page_location;
+  if (url && url.indexOf('_kx=') !== -1) {
+    let kx = url.split('_kx=')[1].split('&')[0];
+    storeCookie('kx', kx);
+
+    return {'$exchange_id': kx};
+  }
+
+  let kxCookie = getCookieValues('stape_klaviyo_kx');
+  if (kxCookie.length) {
+    return {'$exchange_id': kxCookie[0]};
+  }
+
+  let emailCookie = getCookieValues('stape_klaviyo_email');
+  if (emailCookie.length) {
+    return {'$email': emailCookie[0]};
+  }
+
+  return {};
+}
+
+
+function storeCookie(name, value) {
+  setCookie('stape_klaviyo_'+name, value, {
+    domain: 'auto',
+    path: '/',
+    samesite: 'Lax',
+    secure: true,
+    'max-age': 63072000, // 2 years
+    httpOnly: false
+  });
+}
 
 
 ___SERVER_PERMISSIONS___
@@ -301,6 +346,9 @@ ___SERVER_PERMISSIONS___
         }
       ]
     },
+    "clientAnnotations": {
+      "isEditedByUser": true
+    },
     "isRequired": true
   },
   {
@@ -361,6 +409,159 @@ ___SERVER_PERMISSIONS___
       "isEditedByUser": true
     },
     "isRequired": true
+  },
+  {
+    "instance": {
+      "key": {
+        "publicId": "get_cookies",
+        "versionId": "1"
+      },
+      "param": [
+        {
+          "key": "cookieAccess",
+          "value": {
+            "type": 1,
+            "string": "specific"
+          }
+        },
+        {
+          "key": "cookieNames",
+          "value": {
+            "type": 2,
+            "listItem": [
+              {
+                "type": 1,
+                "string": "stape_klaviyo_email"
+              },
+              {
+                "type": 1,
+                "string": "stape_klaviyo_kx"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "clientAnnotations": {
+      "isEditedByUser": true
+    },
+    "isRequired": true
+  },
+  {
+    "instance": {
+      "key": {
+        "publicId": "set_cookies",
+        "versionId": "1"
+      },
+      "param": [
+        {
+          "key": "allowedCookies",
+          "value": {
+            "type": 2,
+            "listItem": [
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "name"
+                  },
+                  {
+                    "type": 1,
+                    "string": "domain"
+                  },
+                  {
+                    "type": 1,
+                    "string": "path"
+                  },
+                  {
+                    "type": 1,
+                    "string": "secure"
+                  },
+                  {
+                    "type": 1,
+                    "string": "session"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "stape_klaviyo_email"
+                  },
+                  {
+                    "type": 1,
+                    "string": "*"
+                  },
+                  {
+                    "type": 1,
+                    "string": "*"
+                  },
+                  {
+                    "type": 1,
+                    "string": "any"
+                  },
+                  {
+                    "type": 1,
+                    "string": "any"
+                  }
+                ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "name"
+                  },
+                  {
+                    "type": 1,
+                    "string": "domain"
+                  },
+                  {
+                    "type": 1,
+                    "string": "path"
+                  },
+                  {
+                    "type": 1,
+                    "string": "secure"
+                  },
+                  {
+                    "type": 1,
+                    "string": "session"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "stape_klaviyo_kx"
+                  },
+                  {
+                    "type": 1,
+                    "string": "*"
+                  },
+                  {
+                    "type": 1,
+                    "string": "*"
+                  },
+                  {
+                    "type": 1,
+                    "string": "any"
+                  },
+                  {
+                    "type": 1,
+                    "string": "any"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "clientAnnotations": {
+      "isEditedByUser": true
+    },
+    "isRequired": true
   }
 ]
 
@@ -373,3 +574,5 @@ scenarios: []
 ___NOTES___
 
 Created on 27/03/2021, 22:13:33
+
+

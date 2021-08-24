@@ -1,5 +1,7 @@
 homepage: "https://stape.io/"
 versions:
+  - sha: 03b21a1782dade6ea6119c8a031ca40674c02f08
+    changeNotes: Add support of storing data in cookies.
   - sha: dbd5d5010ffdd529c588ec381736f22bdd50cad3
     changeNotes: Update for Stape.
   - sha: ad2d46aacb8c5d767b07435fd33a79ee9d3e2d2c

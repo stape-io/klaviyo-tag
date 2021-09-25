@@ -1,6 +1,7 @@
 ﻿const sendHttpRequest = require('sendHttpRequest');
 const getAllEventData = require('getAllEventData');
 const makeInteger = require('makeInteger');
+const makeString = require('makeString');
 const getTimestampMillis = require('getTimestampMillis');
 const encodeUriComponent = require('encodeUriComponent');
 const JSON = require('JSON');
@@ -62,7 +63,11 @@ let url = 'https://a.klaviyo.com/api/track?data=' + encodeUriComponent(toBase64(
 
 sendHttpRequest(url, (statusCode, headers, body) => {
   if (statusCode >= 200 && statusCode < 300) {
-    data.gtmOnSuccess();
+    if (klaviyoEventData.event === 'Viewed Product') {
+      sendViewedItems(klaviyoEventData);
+    } else {
+      data.gtmOnSuccess();
+    }
   } else {
     data.gtmOnFailure();
   }
@@ -110,4 +115,90 @@ function storeCookie(name, value) {
     'max-age': 63072000, // 2 years
     httpOnly: false
   });
+}
+
+function sendViewedItems(klaviyoEventData) {
+  let klaviyoProductsEventData = {
+    token: data.token,
+    time: makeInteger(getTimestampMillis()/1000),
+    customer_properties: klaviyoEventData.customer_properties,
+    properties: {
+      '$viewed_items': getViewedItems(),
+    }
+  };
+
+  if (klaviyoEventData.customer_properties['$email']) {
+    klaviyoProductsEventData.properties['$email'] = klaviyoEventData.customer_properties['$email'];
+  }
+
+  if (isDebug) {
+    logToConsole('Klaviyo viewed items event data: ', klaviyoProductsEventData);
+  }
+
+  if (klaviyoProductsEventData.properties['$email'] && klaviyoProductsEventData.properties['$viewed_items'] && klaviyoProductsEventData.properties['$viewed_items'].length) {
+    let url = 'https://a.klaviyo.com/api/onsite/identify?c='+data.token;
+
+    sendHttpRequest(url, (statusCode, headers, body) => {
+      if (statusCode >= 200 && statusCode < 300) {
+        data.gtmOnSuccess();
+      } else {
+        data.gtmOnFailure();
+      }
+    }, {headers: {'X-Forwarded-For': getRemoteAddress()}, method: 'POST', timeout: 3500}, JSON.stringify(klaviyoProductsEventData));
+  } else {
+    data.gtmOnSuccess();
+  }
+}
+
+function getViewedItems() {
+  let viewedItems = [];
+  let viewedItemsCookie = getCookieValues('stape_klaviyo_viewed_items');
+
+  if (viewedItemsCookie.length && viewedItemsCookie[0]) {
+    viewedItems = JSON.parse(viewedItemsCookie[0]);
+  }
+
+  if (allEventData.ItemId && allEventData.Title) {
+    viewedItems = updateViewedItems(viewedItems);
+  }
+
+  if (viewedItems.length) {
+    viewedItems = viewedItems.slice(-5);
+
+    if (isDebug) {
+      logToConsole('Klaviyo viewed items store data: ', JSON.stringify(viewedItems));
+    }
+
+    storeCookie('viewed_items', JSON.stringify(viewedItems));
+  }
+
+  return viewedItems;
+}
+
+
+function updateViewedItems(viewedItems) {
+  for (let key in viewedItems) {
+    if (viewedItems[key].ItemId && makeString(viewedItems[key].ItemId) === allEventData.ItemId) {
+      viewedItems[key].Views = makeInteger(viewedItems[key].Views) + 1;
+
+      return viewedItems;
+    }
+  }
+
+  viewedItems.push({
+    'Title': allEventData.Title,
+    'ItemId': allEventData.ItemId,
+    'Categories': allEventData.Categories || [allEventData.category],
+    'ImageUrl': allEventData.ImageUrl,
+    'Url': allEventData.Url || allEventData.page_location,
+    'Metadata': {
+      'Brand': allEventData.Brand || allEventData.brand,
+      'Price': allEventData.Price || allEventData.price,
+      'CompareAtPrice': allEventData.CompareAtPrice,
+    },
+    'Views': 1,
+    'LastViewedDate': makeInteger(getTimestampMillis()/1000),
+  });
+
+  return viewedItems;
 }

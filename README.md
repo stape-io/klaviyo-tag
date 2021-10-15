@@ -1,12 +1,22 @@
 # Klaviyo tag for Google Tag Manager Server Side
 
-Klaviyo Tag for the Google Tag Manager server container is a custom tag that will help you to add new users, send events and parameters from your site to Klaviyo.
+Klaviyo Tag for the Google Tag Manager server container allows you to add new users, send events and parameters from your site to Klaviyo. 
+Klaviyo tag for sGTM communicates directly with Klaviyo API and allows adding contacts using sGTM that was previously possible only through the backend integration.
 
+### Getting started
 
-## How to use Klaviyo tag
+1. Add [Klaviyo tag to the server Google Tag Manager](https://tagmanager.google.com/gallery/#/owners/stape-io/templates/klaviyo-tag) from the template gallery.
+2. Add Klaviyo Public API Key.
+3. Select the action type you want to track.
+4. Add contact email, event and contact properties.
 
-- [Integrate Klaviyo with your website using Google Tag Manager Server container](https://stape.io/integrate-klaviyo-with-your-website-using-google-tag-manager-server-container/)
+More detailed description of [how to setting up the Klaviyo tag in the sGTM](https://stape.io/integrate-klaviyo-with-your-website-using-google-tag-manager-server-container/) can be found by this link.
 
+#### Supported events
+
+- Add a new contact to Klaviyo
+- Track contact activity on-site
+- Send events and parameters
 
 ## Open Source
 

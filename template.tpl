@@ -169,6 +169,7 @@ const toBase64 = require('toBase64');
 const getRemoteAddress = require('getRemoteAddress');
 const getCookieValues = require('getCookieValues');
 const setCookie = require('setCookie');
+const decodeUriComponent = require('decodeUriComponent');
 
 const logToConsole = require('logToConsole');
 const getContainerVersion = require('getContainerVersion');
@@ -247,9 +248,13 @@ function getCustomerProperties() {
   let url = allEventData.page_location;
   if (url && url.indexOf('_kx=') !== -1) {
     let kx = url.split('_kx=')[1].split('&')[0];
-    storeCookie('kx', kx);
 
-    return {'$exchange_id': kx};
+    if (kx) {
+      kx = decodeUriComponent(kx);
+      storeCookie('kx', kx);
+
+      return {'$exchange_id': kx};
+    }
   }
 
   let kxCookie = getCookieValues('stape_klaviyo_kx');

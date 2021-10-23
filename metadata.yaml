@@ -1,5 +1,7 @@
 homepage: "https://stape.io/"
 versions:
+  - sha: 2c3fa16a0a67655a3d11135c58626ea1b6b032ac
+    changeNotes: Fix _kx parameter decoding.
   - sha: e1f86dcb0ce534bd126b200751108a573cfd868f
     changeNotes: Add support of storing viewed products.
   - sha: 03b21a1782dade6ea6119c8a031ca40674c02f08

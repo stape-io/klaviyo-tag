@@ -35,33 +35,6 @@ ___TEMPLATE_PARAMETERS___
 
 [
   {
-    "type": "TEXT",
-    "name": "token",
-    "displayName": "Public API Key",
-    "simpleValueType": true,
-    "help": "Follow this guide if you don\u0027t know \u003ca href\u003d\"https://help.klaviyo.com/hc/en-us/articles/115005062267-How-to-Manage-Your-Account-s-API-Keys#find-your-api-keys1\" target\u003d\"_blank\"\u003eHow to Find your API Key\u003c/a\u003e",
-    "valueValidators": [
-      {
-        "type": "NON_EMPTY"
-      }
-    ]
-  },
-  {
-    "type": "TEXT",
-    "name": "email",
-    "displayName": "Email",
-    "simpleValueType": true,
-    "alwaysInSummary": false,
-    "help": "Email of the user who triggered this event"
-  },
-  {
-    "type": "CHECKBOX",
-    "name": "storeEmail",
-    "checkboxText": "Store email in cookies",
-    "simpleValueType": true,
-    "help": "Allow storing the email in cookies if it is provided and use it as a fallback if it is not provided for the current event."
-  },
-  {
     "type": "RADIO",
     "name": "type",
     "displayName": "Type",
@@ -73,10 +46,91 @@ ___TEMPLATE_PARAMETERS___
       {
         "value": "event",
         "displayValue": "Event"
+      },
+      {
+        "value": "addToList",
+        "displayValue": "Add to List"
       }
     ],
+    "simpleValueType": true
+  },
+  {
+    "type": "TEXT",
+    "name": "token",
+    "displayName": "Public API Key",
     "simpleValueType": true,
-    "help": "Choose between sending event or tracking that user is active on-site"
+    "help": "Follow this guide if you don\u0027t know \u003ca href\u003d\"https://help.klaviyo.com/hc/en-us/articles/115005062267-How-to-Manage-Your-Account-s-API-Keys#find-your-api-keys1\" target\u003d\"_blank\"\u003eHow to Find your API Key\u003c/a\u003e",
+    "valueValidators": [
+      {
+        "type": "NON_EMPTY"
+      }
+    ],
+    "enablingConditions": [
+      {
+        "paramName": "type",
+        "paramValue": "addToList",
+        "type": "NOT_EQUALS"
+      }
+    ]
+  },
+  {
+    "type": "TEXT",
+    "name": "apiKey",
+    "displayName": "Private API Key",
+    "simpleValueType": true,
+    "help": "Follow this guide if you don\u0027t know \u003ca href\u003d\"https://developers.klaviyo.com/en/reference/api-overview#restful-apis\" target\u003d\"_blank\"\u003eHow to Find your API Key\u003c/a\u003e",
+    "valueValidators": [
+      {
+        "type": "NON_EMPTY"
+      }
+    ],
+    "enablingConditions": [
+      {
+        "paramName": "type",
+        "paramValue": "addToList",
+        "type": "EQUALS"
+      }
+    ]
+  },
+  {
+    "type": "TEXT",
+    "name": "listId",
+    "simpleValueType": true,
+    "valueValidators": [
+      {
+        "type": "NON_EMPTY"
+      }
+    ],
+    "enablingConditions": [
+      {
+        "paramName": "type",
+        "paramValue": "addToList",
+        "type": "EQUALS"
+      }
+    ],
+    "displayName": "List ID"
+  },
+  {
+    "type": "TEXT",
+    "name": "email",
+    "displayName": "Email",
+    "simpleValueType": true,
+    "alwaysInSummary": false,
+    "help": "Email of the user"
+  },
+  {
+    "type": "CHECKBOX",
+    "name": "storeEmail",
+    "checkboxText": "Store email in cookies",
+    "simpleValueType": true,
+    "help": "Allow storing the email in cookies if it is provided and use it as a fallback if it is not provided for the current event.",
+    "enablingConditions": [
+      {
+        "paramName": "type",
+        "paramValue": "addToList",
+        "type": "NOT_EQUALS"
+      }
+    ]
   },
   {
     "type": "TEXT",
@@ -123,7 +177,14 @@ ___TEMPLATE_PARAMETERS___
         ]
       }
     ],
-    "help": "You can find more info about \u003ca href\u003d\"https://www.klaviyo.com/docs/http-api\" target\u003d\"_blank\"\u003e Special Identify Properties parameters here\u003c/a\u003e"
+    "help": "You can find more info about \u003ca href\u003d\"https://www.klaviyo.com/docs/http-api\" target\u003d\"_blank\"\u003e Special Identify Properties parameters here\u003c/a\u003e",
+    "enablingConditions": [
+      {
+        "paramName": "type",
+        "paramValue": "addToList",
+        "type": "NOT_EQUALS"
+      }
+    ]
   },
   {
     "type": "GROUP",
@@ -151,6 +212,41 @@ ___TEMPLATE_PARAMETERS___
           }
         ]
       }
+    ],
+    "enablingConditions": [
+      {
+        "paramName": "type",
+        "paramValue": "addToList",
+        "type": "NOT_EQUALS"
+      }
+    ]
+  },
+  {
+    "displayName": "Logs Settings",
+    "name": "logsGroup",
+    "groupStyle": "ZIPPY_CLOSED",
+    "type": "GROUP",
+    "subParams": [
+      {
+        "type": "RADIO",
+        "name": "logType",
+        "radioItems": [
+          {
+            "value": "no",
+            "displayValue": "Do not log"
+          },
+          {
+            "value": "debug",
+            "displayValue": "Log to console during debug and preview"
+          },
+          {
+            "value": "always",
+            "displayValue": "Always log to console"
+          }
+        ],
+        "simpleValueType": true,
+        "defaultValue": "debug"
+      }
     ]
   }
 ]
@@ -170,70 +266,95 @@ const getRemoteAddress = require('getRemoteAddress');
 const getCookieValues = require('getCookieValues');
 const setCookie = require('setCookie');
 const decodeUriComponent = require('decodeUriComponent');
-
-const logToConsole = require('logToConsole');
 const getContainerVersion = require('getContainerVersion');
-const containerVersion = getContainerVersion();
-const isDebug = containerVersion.debugMode;
+const logToConsole = require('logToConsole');
+const getRequestHeader = require('getRequestHeader');
+
+const isLoggingEnabled = determinateIsLoggingEnabled();
+const traceId = isLoggingEnabled ? getRequestHeader('trace-id') : undefined;
 
 const allEventData = getAllEventData();
 
-let klaviyoEventData = {
-  token: data.token,
-  event: data.event,
-  customer_properties: getCustomerProperties(),
-  properties: {},
-  time: makeInteger(getTimestampMillis()/1000)
-};
-
-if (data.type === 'active_on_site') {
-  klaviyoEventData.event = '__activity__';
-  klaviyoEventData.properties['$is_session_activity'] = true;
-  klaviyoEventData.properties['$use_ip'] = true;
+if (data.type === 'addToList') {
+  addToList();
+} else {
+  sendEvent();
 }
 
-if (allEventData.page_referrer) {
-  klaviyoEventData.customer_properties['$last_referrer'] = {
-    "ts": klaviyoEventData.time,
-    "value": "",
-    "first_page": allEventData.page_referrer
+function sendEvent() {
+  let klaviyoEventData = {
+    token: data.token,
+    event: data.event,
+    customer_properties: getCustomerProperties(),
+    properties: {},
+    time: makeInteger(getTimestampMillis()/1000)
   };
-}
 
-if (allEventData.page_location) {
-  klaviyoEventData.properties.page = allEventData.page_location;
-}
-
-if (data.customer_properties) {
-  for (let key in data.customer_properties) {
-    klaviyoEventData.customer_properties[data.customer_properties[key].name] = data.customer_properties[key].value;
+  if (data.type === 'active_on_site') {
+    klaviyoEventData.event = '__activity__';
+    klaviyoEventData.properties['$is_session_activity'] = true;
+    klaviyoEventData.properties['$use_ip'] = true;
   }
-}
 
-if (data.properties) {
-  for (let key in data.properties) {
-    klaviyoEventData.properties[data.properties[key].name] = data.properties[key].value;
+  if (allEventData.page_referrer) {
+    klaviyoEventData.customer_properties['$last_referrer'] = {
+      "ts": klaviyoEventData.time,
+      "value": "",
+      "first_page": allEventData.page_referrer
+    };
   }
-}
 
-if (isDebug) {
-  logToConsole('Klaviyo event data: ', klaviyoEventData);
-}
+  if (allEventData.page_location) {
+    klaviyoEventData.properties.page = allEventData.page_location;
+  }
 
-let url = 'https://a.klaviyo.com/api/track?data=' + encodeUriComponent(toBase64(JSON.stringify(klaviyoEventData)));
-
-sendHttpRequest(url, (statusCode, headers, body) => {
-  if (statusCode >= 200 && statusCode < 300) {
-    if (klaviyoEventData.event === 'Viewed Product') {
-      sendViewedItems(klaviyoEventData);
-    } else {
-      data.gtmOnSuccess();
+  if (data.customer_properties) {
+    for (let key in data.customer_properties) {
+      klaviyoEventData.customer_properties[data.customer_properties[key].name] = data.customer_properties[key].value;
     }
-  } else {
-    data.gtmOnFailure();
   }
-}, {headers: {'X-Forwarded-For': getRemoteAddress()}, method: 'GET', timeout: 3500});
 
+  if (data.properties) {
+    for (let key in data.properties) {
+      klaviyoEventData.properties[data.properties[key].name] = data.properties[key].value;
+    }
+  }
+
+  let url = 'https://a.klaviyo.com/api/track?data=' + enc(toBase64(JSON.stringify(klaviyoEventData)));
+
+  if (isLoggingEnabled) {
+    logToConsole(JSON.stringify({
+      'Name': 'Klaviyo',
+      'Type': 'Request',
+      'TraceId': traceId,
+      'EventName': klaviyoEventData.event,
+      'RequestMethod': 'GET',
+      'RequestUrl': url,
+    }));
+  }
+
+  sendHttpRequest(url, (statusCode, headers, body) => {
+    logToConsole(JSON.stringify({
+      'Name': 'Klaviyo',
+      'Type': 'Response',
+      'TraceId': traceId,
+      'EventName': klaviyoEventData.event,
+      'ResponseStatusCode': statusCode,
+      'ResponseHeaders': headers,
+      'ResponseBody': body,
+    }));
+
+    if (statusCode >= 200 && statusCode < 300) {
+      if (klaviyoEventData.event === 'Viewed Product') {
+        sendViewedItems(klaviyoEventData);
+      } else {
+        data.gtmOnSuccess();
+      }
+    } else {
+      data.gtmOnFailure();
+    }
+  }, {headers: {'X-Forwarded-For': getRemoteAddress()}, method: 'GET'});
+}
 
 function getCustomerProperties() {
   let email = data.email;
@@ -270,7 +391,6 @@ function getCustomerProperties() {
   return {};
 }
 
-
 function storeCookie(name, value) {
   setCookie('stape_klaviyo_'+name, value, {
     domain: 'auto',
@@ -296,20 +416,38 @@ function sendViewedItems(klaviyoEventData) {
     klaviyoProductsEventData.properties['$email'] = klaviyoEventData.customer_properties['$email'];
   }
 
-  if (isDebug) {
-    logToConsole('Klaviyo viewed items event data: ', klaviyoProductsEventData);
-  }
-
   if (klaviyoProductsEventData.properties['$email'] && klaviyoProductsEventData.properties['$viewed_items'] && klaviyoProductsEventData.properties['$viewed_items'].length) {
-    let url = 'https://a.klaviyo.com/api/onsite/identify?c='+data.token;
+    let url = 'https://a.klaviyo.com/api/onsite/identify?c='+enc(data.token);
+
+    if (isLoggingEnabled) {
+      logToConsole(JSON.stringify({
+        'Name': 'Klaviyo',
+        'Type': 'Request',
+        'TraceId': traceId,
+        'EventName': 'viewed_items',
+        'RequestMethod': 'POST',
+        'RequestUrl': url,
+        'RequestBody': klaviyoProductsEventData,
+      }));
+    }
 
     sendHttpRequest(url, (statusCode, headers, body) => {
+      logToConsole(JSON.stringify({
+        'Name': 'Klaviyo',
+        'Type': 'Response',
+        'TraceId': traceId,
+        'EventName': klaviyoEventData.event,
+        'ResponseStatusCode': statusCode,
+        'ResponseHeaders': headers,
+        'ResponseBody': body,
+      }));
+
       if (statusCode >= 200 && statusCode < 300) {
         data.gtmOnSuccess();
       } else {
         data.gtmOnFailure();
       }
-    }, {headers: {'X-Forwarded-For': getRemoteAddress()}, method: 'POST', timeout: 3500}, JSON.stringify(klaviyoProductsEventData));
+    }, {headers: {'X-Forwarded-For': getRemoteAddress(), 'Content-Type': 'application/json'}, method: 'POST'}, JSON.stringify(klaviyoProductsEventData));
   } else {
     data.gtmOnSuccess();
   }
@@ -330,16 +468,11 @@ function getViewedItems() {
   if (viewedItems.length) {
     viewedItems = viewedItems.slice(-5);
 
-    if (isDebug) {
-      logToConsole('Klaviyo viewed items store data: ', JSON.stringify(viewedItems));
-    }
-
     storeCookie('viewed_items', JSON.stringify(viewedItems));
   }
 
   return viewedItems;
 }
-
 
 function updateViewedItems(viewedItems) {
   for (let key in viewedItems) {
@@ -366,6 +499,72 @@ function updateViewedItems(viewedItems) {
   });
 
   return viewedItems;
+}
+
+function determinateIsLoggingEnabled() {
+  const containerVersion = getContainerVersion();
+  const isDebug = !!(
+      containerVersion &&
+      (containerVersion.debugMode || containerVersion.previewMode)
+  );
+
+  if (!data.logType) {
+    return isDebug;
+  }
+
+  if (data.logType === 'no') {
+    return false;
+  }
+
+  if (data.logType === 'debug') {
+    return isDebug;
+  }
+
+  return data.logType === 'always';
+}
+
+function addToList() {
+  let url = 'https://a.klaviyo.com/api/v2/list/'+enc(data.listId)+'/subscribe?api_key='+enc(data.apiKey);
+  let addToListData = {
+    'profiles': [{
+      'email': data.email,
+    }]
+  };
+
+  if (isLoggingEnabled) {
+    logToConsole(JSON.stringify({
+      'Name': 'Klaviyo',
+      'Type': 'Request',
+      'TraceId': traceId,
+      'EventName': 'add_to_list',
+      'RequestMethod': 'POST',
+      'RequestUrl': url,
+      'RequestBody': addToListData,
+    }));
+  }
+
+  sendHttpRequest(url, (statusCode, headers, body) => {
+    logToConsole(JSON.stringify({
+      'Name': 'Klaviyo',
+      'Type': 'Response',
+      'TraceId': traceId,
+      'EventName': 'add_to_list',
+      'ResponseStatusCode': statusCode,
+      'ResponseHeaders': headers,
+      'ResponseBody': body,
+    }));
+
+    if (statusCode >= 200 && statusCode < 300) {
+      data.gtmOnSuccess();
+    } else {
+      data.gtmOnFailure();
+    }
+  }, {headers: {'X-Forwarded-For': getRemoteAddress(), 'Content-Type': 'application/json'}, method: 'POST'}, JSON.stringify(addToListData));
+}
+
+function enc(data) {
+  data = data || '';
+  return encodeUriComponent(data);
 }
 
 
@@ -437,7 +636,7 @@ ___SERVER_PERMISSIONS___
           "key": "environments",
           "value": {
             "type": 1,
-            "string": "debug"
+            "string": "all"
           }
         }
       ]

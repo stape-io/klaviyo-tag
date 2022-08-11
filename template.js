@@ -10,11 +10,11 @@ const getRemoteAddress = require('getRemoteAddress');
 const getCookieValues = require('getCookieValues');
 const setCookie = require('setCookie');
 const decodeUriComponent = require('decodeUriComponent');
-
-const logToConsole = require('logToConsole');
 const getContainerVersion = require('getContainerVersion');
-const containerVersion = getContainerVersion();
-const isDebug = containerVersion.debugMode;
+const logToConsole = require('logToConsole');
+
+const isLoggingEnabled = determinateIsLoggingEnabled();
+const traceId = isLoggingEnabled ? getRequestHeader('trace-id') : undefined;
 
 const allEventData = getAllEventData();
 
@@ -56,13 +56,30 @@ if (data.properties) {
   }
 }
 
-if (isDebug) {
-  logToConsole('Klaviyo event data: ', klaviyoEventData);
-}
-
 let url = 'https://a.klaviyo.com/api/track?data=' + encodeUriComponent(toBase64(JSON.stringify(klaviyoEventData)));
 
+if (isLoggingEnabled) {
+  logToConsole(JSON.stringify({
+    'Name': 'Klaviyo',
+    'Type': 'Request',
+    'TraceId': traceId,
+    'EventName': klaviyoEventData.event,
+    'RequestMethod': 'GET',
+    'RequestUrl': url,
+  }));
+}
+
 sendHttpRequest(url, (statusCode, headers, body) => {
+  logToConsole(JSON.stringify({
+    'Name': 'Klaviyo',
+    'Type': 'Response',
+    'TraceId': traceId,
+    'EventName': klaviyoEventData.event,
+    'ResponseStatusCode': statusCode,
+    'ResponseHeaders': headers,
+    'ResponseBody': body,
+  }));
+
   if (statusCode >= 200 && statusCode < 300) {
     if (klaviyoEventData.event === 'Viewed Product') {
       sendViewedItems(klaviyoEventData);
@@ -72,7 +89,7 @@ sendHttpRequest(url, (statusCode, headers, body) => {
   } else {
     data.gtmOnFailure();
   }
-}, {headers: {'X-Forwarded-For': getRemoteAddress()}, method: 'GET', timeout: 3500});
+}, {headers: {'X-Forwarded-For': getRemoteAddress()}, method: 'GET'});
 
 
 function getCustomerProperties() {
@@ -136,20 +153,38 @@ function sendViewedItems(klaviyoEventData) {
     klaviyoProductsEventData.properties['$email'] = klaviyoEventData.customer_properties['$email'];
   }
 
-  if (isDebug) {
-    logToConsole('Klaviyo viewed items event data: ', klaviyoProductsEventData);
-  }
-
   if (klaviyoProductsEventData.properties['$email'] && klaviyoProductsEventData.properties['$viewed_items'] && klaviyoProductsEventData.properties['$viewed_items'].length) {
     let url = 'https://a.klaviyo.com/api/onsite/identify?c='+data.token;
 
+    if (isLoggingEnabled) {
+      logToConsole(JSON.stringify({
+        'Name': 'Klaviyo',
+        'Type': 'Request',
+        'TraceId': traceId,
+        'EventName': 'viewed_items',
+        'RequestMethod': 'POST',
+        'RequestUrl': url,
+        'ResponseBody': klaviyoProductsEventData,
+      }));
+    }
+
     sendHttpRequest(url, (statusCode, headers, body) => {
+      logToConsole(JSON.stringify({
+        'Name': 'Klaviyo',
+        'Type': 'Response',
+        'TraceId': traceId,
+        'EventName': klaviyoEventData.event,
+        'ResponseStatusCode': statusCode,
+        'ResponseHeaders': headers,
+        'ResponseBody': body,
+      }));
+
       if (statusCode >= 200 && statusCode < 300) {
         data.gtmOnSuccess();
       } else {
         data.gtmOnFailure();
       }
-    }, {headers: {'X-Forwarded-For': getRemoteAddress()}, method: 'POST', timeout: 3500}, JSON.stringify(klaviyoProductsEventData));
+    }, {headers: {'X-Forwarded-For': getRemoteAddress()}, method: 'POST'}, JSON.stringify(klaviyoProductsEventData));
   } else {
     data.gtmOnSuccess();
   }
@@ -169,10 +204,6 @@ function getViewedItems() {
 
   if (viewedItems.length) {
     viewedItems = viewedItems.slice(-5);
-
-    if (isDebug) {
-      logToConsole('Klaviyo viewed items store data: ', JSON.stringify(viewedItems));
-    }
 
     storeCookie('viewed_items', JSON.stringify(viewedItems));
   }
@@ -206,4 +237,26 @@ function updateViewedItems(viewedItems) {
   });
 
   return viewedItems;
+}
+
+function determinateIsLoggingEnabled() {
+  const containerVersion = getContainerVersion();
+  const isDebug = !!(
+      containerVersion &&
+      (containerVersion.debugMode || containerVersion.previewMode)
+  );
+
+  if (!data.logType) {
+    return isDebug;
+  }
+
+  if (data.logType === 'no') {
+    return false;
+  }
+
+  if (data.logType === 'debug') {
+    return isDebug;
+  }
+
+  return data.logType === 'always';
 }

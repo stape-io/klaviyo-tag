@@ -1,5 +1,7 @@
 homepage: "https://stape.io/"
 versions:
+  - sha: ae17165aee3ddbfd431a0575df2652c8d9074f8f
+    changeNotes: Add to list functionality.
   - sha: 2c3fa16a0a67655a3d11135c58626ea1b6b032ac
     changeNotes: Fix _kx parameter decoding.
   - sha: e1f86dcb0ce534bd126b200751108a573cfd868f

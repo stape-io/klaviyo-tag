@@ -14,6 +14,8 @@ const getContainerVersion = require('getContainerVersion');
 const logToConsole = require('logToConsole');
 const getRequestHeader = require('getRequestHeader');
 
+const eventPropertiesToIgnore = ["x-ga-protocol_version", "x-ga-measurement_id", "x-ga-gtm_version", "x-ga-page_id", "x-ga-system_properties", "client_id", "language", "x-ga-request_count", "ga_session_id", "ga_session_number", "x-ga-mp2-seg", "page_location", "page_referrer", "page_title", "ip_override", "user_agent", "x-ga-js_client_id", "screen_resolution", "x-ga-mp2-user_properties"];
+
 const isLoggingEnabled = determinateIsLoggingEnabled();
 const traceId = isLoggingEnabled ? getRequestHeader('trace-id') : undefined;
 
@@ -33,6 +35,22 @@ function sendEvent() {
     properties: {},
     time: makeInteger(getTimestampMillis()/1000)
   };
+  
+  // We run this copy early in this process so it data can be 
+  // overwritten by explicitly set properties.
+  if (data.forwardAllProperties) {
+    let excludeKeys = [];
+    if(data.excludeForwardingProperties) excludeKeys = data.excludeForwardingProperties.map((n) => n.name);
+  
+    for(let key in allEventData) {
+      const shouldIgnore = hasItem(eventPropertiesToIgnore, key);
+      const shouldExclude = hasItem(excludeKeys, key);
+      
+      if(!shouldIgnore && !shouldExclude) {
+        klaviyoEventData.properties[key] = allEventData[key];
+      }
+    }
+  }
 
   if (data.type === 'active_on_site') {
     klaviyoEventData.event = '__activity__';
@@ -309,4 +327,13 @@ function addToList() {
 function enc(data) {
   data = data || '';
   return encodeUriComponent(data);
+}
+
+function hasItem(arr, item) {
+  for(let k in arr) {
+    if(arr[k] === item)
+       return true;
+  }
+  
+  return false;
 }

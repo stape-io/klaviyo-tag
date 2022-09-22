@@ -248,6 +248,47 @@ ___TEMPLATE_PARAMETERS___
         "defaultValue": "debug"
       }
     ]
+  },
+  {
+    "type": "GROUP",
+    "name": "propertyForwarding",
+    "displayName": "Event data forwarding",
+    "groupStyle": "ZIPPY_CLOSED",
+    "subParams": [
+      {
+        "type": "CHECKBOX",
+        "name": "forwardAllProperties",
+        "checkboxText": "Forward all GTM event data to Klaviyo as properties",
+        "simpleValueType": true
+      },
+      {
+        "type": "SIMPLE_TABLE",
+        "name": "excludeForwardingProperties",
+        "displayName": "Exclude these properties from forwarding",
+        "simpleTableColumns": [
+          {
+            "defaultValue": "",
+            "displayName": "Name",
+            "name": "name",
+            "type": "TEXT"
+          }
+        ],
+        "enablingConditions": [
+          {
+            "paramName": "forwardAllProperties",
+            "paramValue": true,
+            "type": "EQUALS"
+          }
+        ]
+      }
+    ],
+    "enablingConditions": [
+      {
+        "paramName": "type",
+        "paramValue": "event",
+        "type": "EQUALS"
+      }
+    ]
   }
 ]
 
@@ -270,6 +311,8 @@ const getContainerVersion = require('getContainerVersion');
 const logToConsole = require('logToConsole');
 const getRequestHeader = require('getRequestHeader');
 
+const eventPropertiesToIgnore = ["x-ga-protocol_version", "x-ga-measurement_id", "x-ga-gtm_version", "x-ga-page_id", "x-ga-system_properties", "client_id", "language", "x-ga-request_count", "ga_session_id", "ga_session_number", "x-ga-mp2-seg", "page_location", "page_referrer", "page_title", "ip_override", "user_agent", "x-ga-js_client_id", "screen_resolution", "x-ga-mp2-user_properties"];
+
 const isLoggingEnabled = determinateIsLoggingEnabled();
 const traceId = isLoggingEnabled ? getRequestHeader('trace-id') : undefined;
 
@@ -289,6 +332,22 @@ function sendEvent() {
     properties: {},
     time: makeInteger(getTimestampMillis()/1000)
   };
+  
+  // We run this copy early in this process so it data can be 
+  // overwritten by explicitly set properties.
+  if (data.forwardAllProperties) {
+    let excludeKeys = [];
+    if(data.excludeForwardingProperties) excludeKeys = data.excludeForwardingProperties.map((n) => n.name);
+  
+    for(let key in allEventData) {
+      const shouldIgnore = hasItem(eventPropertiesToIgnore, key);
+      const shouldExclude = hasItem(excludeKeys, key);
+      
+      if(!shouldIgnore && !shouldExclude) {
+        klaviyoEventData.properties[key] = allEventData[key];
+      }
+    }
+  }
 
   if (data.type === 'active_on_site') {
     klaviyoEventData.event = '__activity__';
@@ -565,6 +624,15 @@ function addToList() {
 function enc(data) {
   data = data || '';
   return encodeUriComponent(data);
+}
+
+function hasItem(arr, item) {
+  for(let k in arr) {
+    if(arr[k] === item)
+       return true;
+  }
+  
+  return false;
 }
 
 
@@ -914,7 +982,42 @@ ___SERVER_PERMISSIONS___
 
 ___TESTS___
 
-scenarios: []
+scenarios:
+- name: Excludes properties specified for exclusion
+  code: |-
+    const logToConsole = require('logToConsole');
+    const fromBase64 = require('fromBase64');
+    const decodeUriComponent = require('decodeUriComponent');
+
+    const mockData = {
+      token: "token",
+      event: "event_name",
+      type: "event",
+      forwardAllProperties: true,
+      excludeForwardingProperties: [{ name: "abc" }],
+      customer_properties: [{ name: "custn1", value: "custv1" }],
+      properties: [{ name: "propn1", value: "propv1" }]
+    };
+
+    mock('getAllEventData', { "abc": 123, "def": 456, "propn1": "propv2" });
+    mock('sendHttpRequest', function(url, opts) {
+      const data = url.split("data=")[1];
+      let body = fromBase64(decodeUriComponent(data));
+      assertThat(body).doesNotContain("abc");
+      assertThat(body).contains("def");
+      assertThat(body).contains("custn1");
+      assertThat(body).contains("custv1");
+      assertThat(body).contains("propn1");
+      assertThat(body).contains("propv1");
+      assertThat(body).doesNotContain("custv2");
+      assertThat(body).doesNotContain("propv2");
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi("sendHttpRequest").wasCalled();
 
 
 ___NOTES___

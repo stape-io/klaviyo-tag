@@ -1,5 +1,7 @@
 homepage: "https://stape.io/"
 versions:
+  - sha: df6eb830b3c800ba1064f43dbdc19d32bcd5f187
+    changeNotes: Allow (optionally) forwading all GTM event data to Klaviyo.
   - sha: ae17165aee3ddbfd431a0575df2652c8d9074f8f
     changeNotes: Add to list functionality.
   - sha: 2c3fa16a0a67655a3d11135c58626ea1b6b032ac

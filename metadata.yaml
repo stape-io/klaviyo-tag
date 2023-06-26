@@ -1,5 +1,7 @@
 homepage: "https://stape.io/"
 versions:
+  - sha: c8fe05c47821210fe1eea2b335cc2f57d13d7826
+    changeNotes: Add ability to use OptimisticScenario
   - sha: df6eb830b3c800ba1064f43dbdc19d32bcd5f187
     changeNotes: Allow (optionally) forwading all GTM event data to Klaviyo.
   - sha: ae17165aee3ddbfd431a0575df2652c8d9074f8f

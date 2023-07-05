@@ -311,12 +311,33 @@ const getContainerVersion = require('getContainerVersion');
 const logToConsole = require('logToConsole');
 const getRequestHeader = require('getRequestHeader');
 
-const eventPropertiesToIgnore = ["x-ga-protocol_version", "x-ga-measurement_id", "x-ga-gtm_version", "x-ga-page_id", "x-ga-system_properties", "client_id", "language", "x-ga-request_count", "ga_session_id", "ga_session_number", "x-ga-mp2-seg", "page_location", "page_referrer", "page_title", "ip_override", "user_agent", "x-ga-js_client_id", "screen_resolution", "x-ga-mp2-user_properties"];
+const eventPropertiesToIgnore = [
+  'x-ga-protocol_version',
+  'x-ga-measurement_id',
+  'x-ga-gtm_version',
+  'x-ga-page_id',
+  'x-ga-system_properties',
+  'client_id',
+  'language',
+  'x-ga-request_count',
+  'ga_session_id',
+  'ga_session_number',
+  'x-ga-mp2-seg',
+  'page_location',
+  'page_referrer',
+  'page_title',
+  'ip_override',
+  'user_agent',
+  'x-ga-js_client_id',
+  'screen_resolution',
+  'x-ga-mp2-user_properties',
+];
 
 const isLoggingEnabled = determinateIsLoggingEnabled();
 const traceId = isLoggingEnabled ? getRequestHeader('trace-id') : undefined;
 
 const allEventData = getAllEventData();
+const klaviyoApiRevision = '2023-06-15';
 
 if (data.type === 'addToList') {
   addToList();
@@ -330,20 +351,21 @@ function sendEvent() {
     event: data.event,
     customer_properties: getCustomerProperties(),
     properties: {},
-    time: makeInteger(getTimestampMillis()/1000)
+    time: makeInteger(getTimestampMillis() / 1000),
   };
-  
-  // We run this copy early in this process so it data can be 
+
+  // We run this copy early in this process so it data can be
   // overwritten by explicitly set properties.
   if (data.forwardAllProperties) {
     let excludeKeys = [];
-    if(data.excludeForwardingProperties) excludeKeys = data.excludeForwardingProperties.map((n) => n.name);
-  
-    for(let key in allEventData) {
+    if (data.excludeForwardingProperties)
+      excludeKeys = data.excludeForwardingProperties.map((n) => n.name);
+
+    for (let key in allEventData) {
       const shouldIgnore = hasItem(eventPropertiesToIgnore, key);
       const shouldExclude = hasItem(excludeKeys, key);
-      
-      if(!shouldIgnore && !shouldExclude) {
+
+      if (!shouldIgnore && !shouldExclude) {
         klaviyoEventData.properties[key] = allEventData[key];
       }
     }
@@ -357,9 +379,9 @@ function sendEvent() {
 
   if (allEventData.page_referrer) {
     klaviyoEventData.customer_properties['$last_referrer'] = {
-      "ts": klaviyoEventData.time,
-      "value": "",
-      "first_page": allEventData.page_referrer
+      ts: klaviyoEventData.time,
+      value: '',
+      first_page: allEventData.page_referrer,
     };
   }
 
@@ -369,50 +391,62 @@ function sendEvent() {
 
   if (data.customer_properties) {
     for (let key in data.customer_properties) {
-      klaviyoEventData.customer_properties[data.customer_properties[key].name] = data.customer_properties[key].value;
+      klaviyoEventData.customer_properties[data.customer_properties[key].name] =
+        data.customer_properties[key].value;
     }
   }
 
   if (data.properties) {
     for (let key in data.properties) {
-      klaviyoEventData.properties[data.properties[key].name] = data.properties[key].value;
+      klaviyoEventData.properties[data.properties[key].name] =
+        data.properties[key].value;
     }
   }
 
-  let url = 'https://a.klaviyo.com/api/track?data=' + enc(toBase64(JSON.stringify(klaviyoEventData)));
+  let url =
+    'https://a.klaviyo.com/api/track?data=' +
+    enc(toBase64(JSON.stringify(klaviyoEventData)));
 
   if (isLoggingEnabled) {
-    logToConsole(JSON.stringify({
-      'Name': 'Klaviyo',
-      'Type': 'Request',
-      'TraceId': traceId,
-      'EventName': klaviyoEventData.event,
-      'RequestMethod': 'GET',
-      'RequestUrl': url,
-    }));
+    logToConsole(
+      JSON.stringify({
+        Name: 'Klaviyo',
+        Type: 'Request',
+        TraceId: traceId,
+        EventName: klaviyoEventData.event,
+        RequestMethod: 'GET',
+        RequestUrl: url,
+      })
+    );
   }
 
-  sendHttpRequest(url, (statusCode, headers, body) => {
-    logToConsole(JSON.stringify({
-      'Name': 'Klaviyo',
-      'Type': 'Response',
-      'TraceId': traceId,
-      'EventName': klaviyoEventData.event,
-      'ResponseStatusCode': statusCode,
-      'ResponseHeaders': headers,
-      'ResponseBody': body,
-    }));
+  sendHttpRequest(
+    url,
+    (statusCode, headers, body) => {
+      logToConsole(
+        JSON.stringify({
+          Name: 'Klaviyo',
+          Type: 'Response',
+          TraceId: traceId,
+          EventName: klaviyoEventData.event,
+          ResponseStatusCode: statusCode,
+          ResponseHeaders: headers,
+          ResponseBody: body,
+        })
+      );
 
-    if (statusCode >= 200 && statusCode < 300) {
-      if (klaviyoEventData.event === 'Viewed Product') {
-        sendViewedItems(klaviyoEventData);
+      if (statusCode >= 200 && statusCode < 300) {
+        if (klaviyoEventData.event === 'Viewed Product') {
+          sendViewedItems(klaviyoEventData);
+        } else {
+          data.gtmOnSuccess();
+        }
       } else {
-        data.gtmOnSuccess();
+        data.gtmOnFailure();
       }
-    } else {
-      data.gtmOnFailure();
-    }
-  }, {headers: {'X-Forwarded-For': getRemoteAddress()}, method: 'GET'});
+    },
+    { headers: { 'X-Forwarded-For': getRemoteAddress() }, method: 'GET' }
+  );
 }
 
 function getCustomerProperties() {
@@ -422,7 +456,7 @@ function getCustomerProperties() {
       storeCookie('email', email);
     }
 
-    return {'$email': email};
+    return { $email: email };
   }
 
   let url = allEventData.page_location;
@@ -433,80 +467,100 @@ function getCustomerProperties() {
       kx = decodeUriComponent(kx);
       storeCookie('kx', kx);
 
-      return {'$exchange_id': kx};
+      return { $exchange_id: kx };
     }
   }
 
   let kxCookie = getCookieValues('stape_klaviyo_kx');
   if (kxCookie.length) {
-    return {'$exchange_id': kxCookie[0]};
+    return { $exchange_id: kxCookie[0] };
   }
 
   let emailCookie = getCookieValues('stape_klaviyo_email');
   if (emailCookie.length) {
-    return {'$email': emailCookie[0]};
+    return { $email: emailCookie[0] };
   }
 
   return {};
 }
 
 function storeCookie(name, value) {
-  setCookie('stape_klaviyo_'+name, value, {
+  setCookie('stape_klaviyo_' + name, value, {
     domain: 'auto',
     path: '/',
     samesite: 'Lax',
     secure: true,
     'max-age': 63072000, // 2 years
-    httpOnly: false
+    httpOnly: false,
   });
 }
 
 function sendViewedItems(klaviyoEventData) {
   let klaviyoProductsEventData = {
     token: data.token,
-    time: makeInteger(getTimestampMillis()/1000),
+    time: makeInteger(getTimestampMillis() / 1000),
     customer_properties: klaviyoEventData.customer_properties,
     properties: {
-      '$viewed_items': getViewedItems(),
-    }
+      $viewed_items: getViewedItems(),
+    },
   };
 
   if (klaviyoEventData.customer_properties['$email']) {
-    klaviyoProductsEventData.properties['$email'] = klaviyoEventData.customer_properties['$email'];
+    klaviyoProductsEventData.properties['$email'] =
+      klaviyoEventData.customer_properties['$email'];
   }
 
-  if (klaviyoProductsEventData.properties['$email'] && klaviyoProductsEventData.properties['$viewed_items'] && klaviyoProductsEventData.properties['$viewed_items'].length) {
-    let url = 'https://a.klaviyo.com/api/onsite/identify?c='+enc(data.token);
+  if (
+    klaviyoProductsEventData.properties['$email'] &&
+    klaviyoProductsEventData.properties['$viewed_items'] &&
+    klaviyoProductsEventData.properties['$viewed_items'].length
+  ) {
+    let url = 'https://a.klaviyo.com/api/onsite/identify?c=' + enc(data.token);
 
     if (isLoggingEnabled) {
-      logToConsole(JSON.stringify({
-        'Name': 'Klaviyo',
-        'Type': 'Request',
-        'TraceId': traceId,
-        'EventName': 'viewed_items',
-        'RequestMethod': 'POST',
-        'RequestUrl': url,
-        'RequestBody': klaviyoProductsEventData,
-      }));
+      logToConsole(
+        JSON.stringify({
+          Name: 'Klaviyo',
+          Type: 'Request',
+          TraceId: traceId,
+          EventName: 'viewed_items',
+          RequestMethod: 'POST',
+          RequestUrl: url,
+          RequestBody: klaviyoProductsEventData,
+        })
+      );
     }
 
-    sendHttpRequest(url, (statusCode, headers, body) => {
-      logToConsole(JSON.stringify({
-        'Name': 'Klaviyo',
-        'Type': 'Response',
-        'TraceId': traceId,
-        'EventName': klaviyoEventData.event,
-        'ResponseStatusCode': statusCode,
-        'ResponseHeaders': headers,
-        'ResponseBody': body,
-      }));
+    sendHttpRequest(
+      url,
+      (statusCode, headers, body) => {
+        logToConsole(
+          JSON.stringify({
+            Name: 'Klaviyo',
+            Type: 'Response',
+            TraceId: traceId,
+            EventName: klaviyoEventData.event,
+            ResponseStatusCode: statusCode,
+            ResponseHeaders: headers,
+            ResponseBody: body,
+          })
+        );
 
-      if (statusCode >= 200 && statusCode < 300) {
-        data.gtmOnSuccess();
-      } else {
-        data.gtmOnFailure();
-      }
-    }, {headers: {'X-Forwarded-For': getRemoteAddress(), 'Content-Type': 'application/json'}, method: 'POST'}, JSON.stringify(klaviyoProductsEventData));
+        if (statusCode >= 200 && statusCode < 300) {
+          data.gtmOnSuccess();
+        } else {
+          data.gtmOnFailure();
+        }
+      },
+      {
+        headers: {
+          'X-Forwarded-For': getRemoteAddress(),
+          'Content-Type': 'application/json',
+        },
+        method: 'POST',
+      },
+      JSON.stringify(klaviyoProductsEventData)
+    );
   } else {
     data.gtmOnSuccess();
   }
@@ -535,7 +589,10 @@ function getViewedItems() {
 
 function updateViewedItems(viewedItems) {
   for (let key in viewedItems) {
-    if (viewedItems[key].ItemId && makeString(viewedItems[key].ItemId) === allEventData.ItemId) {
+    if (
+      viewedItems[key].ItemId &&
+      makeString(viewedItems[key].ItemId) === allEventData.ItemId
+    ) {
       viewedItems[key].Views = makeInteger(viewedItems[key].Views) + 1;
 
       return viewedItems;
@@ -543,18 +600,18 @@ function updateViewedItems(viewedItems) {
   }
 
   viewedItems.push({
-    'Title': allEventData.Title,
-    'ItemId': allEventData.ItemId,
-    'Categories': allEventData.Categories || [allEventData.category],
-    'ImageUrl': allEventData.ImageUrl,
-    'Url': allEventData.Url || allEventData.page_location,
-    'Metadata': {
-      'Brand': allEventData.Brand || allEventData.brand,
-      'Price': allEventData.Price || allEventData.price,
-      'CompareAtPrice': allEventData.CompareAtPrice,
+    Title: allEventData.Title,
+    ItemId: allEventData.ItemId,
+    Categories: allEventData.Categories || [allEventData.category],
+    ImageUrl: allEventData.ImageUrl,
+    Url: allEventData.Url || allEventData.page_location,
+    Metadata: {
+      Brand: allEventData.Brand || allEventData.brand,
+      Price: allEventData.Price || allEventData.price,
+      CompareAtPrice: allEventData.CompareAtPrice,
     },
-    'Views': 1,
-    'LastViewedDate': makeInteger(getTimestampMillis()/1000),
+    Views: 1,
+    LastViewedDate: makeInteger(getTimestampMillis() / 1000),
   });
 
   return viewedItems;
@@ -563,8 +620,8 @@ function updateViewedItems(viewedItems) {
 function determinateIsLoggingEnabled() {
   const containerVersion = getContainerVersion();
   const isDebug = !!(
-      containerVersion &&
-      (containerVersion.debugMode || containerVersion.previewMode)
+    containerVersion &&
+    (containerVersion.debugMode || containerVersion.previewMode)
   );
 
   if (!data.logType) {
@@ -583,42 +640,63 @@ function determinateIsLoggingEnabled() {
 }
 
 function addToList() {
-  let url = 'https://a.klaviyo.com/api/v2/list/'+enc(data.listId)+'/subscribe?api_key='+enc(data.apiKey);
+  let url =
+    'https://a.klaviyo.com/api/v2/list/' +
+    enc(data.listId) +
+    '/subscribe?api_key=' +
+    enc(data.apiKey);
   let addToListData = {
-    'profiles': [{
-      'email': data.email,
-    }]
+    profiles: [
+      {
+        email: data.email,
+      },
+    ],
   };
 
   if (isLoggingEnabled) {
-    logToConsole(JSON.stringify({
-      'Name': 'Klaviyo',
-      'Type': 'Request',
-      'TraceId': traceId,
-      'EventName': 'add_to_list',
-      'RequestMethod': 'POST',
-      'RequestUrl': url,
-      'RequestBody': addToListData,
-    }));
+    logToConsole(
+      JSON.stringify({
+        Name: 'Klaviyo',
+        Type: 'Request',
+        TraceId: traceId,
+        EventName: 'add_to_list',
+        RequestMethod: 'POST',
+        RequestUrl: url,
+        RequestBody: addToListData,
+      })
+    );
   }
 
-  sendHttpRequest(url, (statusCode, headers, body) => {
-    logToConsole(JSON.stringify({
-      'Name': 'Klaviyo',
-      'Type': 'Response',
-      'TraceId': traceId,
-      'EventName': 'add_to_list',
-      'ResponseStatusCode': statusCode,
-      'ResponseHeaders': headers,
-      'ResponseBody': body,
-    }));
+  sendHttpRequest(
+    url,
+    (statusCode, headers, body) => {
+      logToConsole(
+        JSON.stringify({
+          Name: 'Klaviyo',
+          Type: 'Response',
+          TraceId: traceId,
+          EventName: 'add_to_list',
+          ResponseStatusCode: statusCode,
+          ResponseHeaders: headers,
+          ResponseBody: body,
+        })
+      );
 
-    if (statusCode >= 200 && statusCode < 300) {
-      data.gtmOnSuccess();
-    } else {
-      data.gtmOnFailure();
-    }
-  }, {headers: {'X-Forwarded-For': getRemoteAddress(), 'Content-Type': 'application/json'}, method: 'POST'}, JSON.stringify(addToListData));
+      if (statusCode >= 200 && statusCode < 300) {
+        data.gtmOnSuccess();
+      } else {
+        data.gtmOnFailure();
+      }
+    },
+    {
+      headers: {
+        'X-Forwarded-For': getRemoteAddress(),
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+    },
+    JSON.stringify(addToListData)
+  );
 }
 
 function enc(data) {
@@ -627,14 +705,12 @@ function enc(data) {
 }
 
 function hasItem(arr, item) {
-  for(let k in arr) {
-    if(arr[k] === item)
-       return true;
+  for (let k in arr) {
+    if (arr[k] === item) return true;
   }
-  
+
   return false;
 }
-
 
 ___SERVER_PERMISSIONS___
 

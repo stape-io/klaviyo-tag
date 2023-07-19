@@ -551,6 +551,7 @@ function sendEvent() {
           EventName: eventNameLogs,
           RequestMethod: 'POST',
           RequestUrl: url,
+          RequestBody: klaviyoEventData,
         })
     );
   }
@@ -584,10 +585,11 @@ function sendEvent() {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           'Revision': klaviyoApiRevision,
-          'Authorization': data.apiKey,
+          'Authorization': 'Klaviyo-API-Key ' + data.apiKey,
         },
         method: 'POST'
-      }
+      },
+      JSON.stringify(klaviyoEventData)
   );
 
   if (data.useOptimisticScenario) {
@@ -622,7 +624,7 @@ function getProperties() {
     }
   }
 
-  return {};
+  return klaviyoProperties;
 }
 
 function getCustomerProperties() {
@@ -835,7 +837,7 @@ function addToList() {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           'Revision': klaviyoApiRevision,
-          'Authorization': data.apiKey,
+          'Authorization': 'Klaviyo-API-Key ' + data.apiKey,
         },
         method: 'POST',
       },

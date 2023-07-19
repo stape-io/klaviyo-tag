@@ -1,5 +1,7 @@
 homepage: "https://stape.io/"
 versions:
+  - sha: ff9baecd526fd646bbdb56676ca579c9c6d58ffe
+    changeNotes: Update to New API.
   - sha: c8fe05c47821210fe1eea2b335cc2f57d13d7826
     changeNotes: Add ability to use OptimisticScenario
   - sha: df6eb830b3c800ba1064f43dbdc19d32bcd5f187

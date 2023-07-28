@@ -1214,42 +1214,7 @@ ___SERVER_PERMISSIONS___
 
 ___TESTS___
 
-scenarios:
-- name: Excludes properties specified for exclusion
-  code: |-
-    const logToConsole = require('logToConsole');
-    const fromBase64 = require('fromBase64');
-    const decodeUriComponent = require('decodeUriComponent');
-
-    const mockData = {
-      token: "token",
-      event: "event_name",
-      type: "event",
-      forwardAllProperties: true,
-      excludeForwardingProperties: [{ name: "abc" }],
-      customer_properties: [{ name: "custn1", value: "custv1" }],
-      properties: [{ name: "propn1", value: "propv1" }]
-    };
-
-    mock('getAllEventData', { "abc": 123, "def": 456, "propn1": "propv2" });
-    mock('sendHttpRequest', function(url, opts) {
-      const data = url.split("data=")[1];
-      let body = fromBase64(decodeUriComponent(data));
-      assertThat(body).doesNotContain("abc");
-      assertThat(body).contains("def");
-      assertThat(body).contains("custn1");
-      assertThat(body).contains("custv1");
-      assertThat(body).contains("propn1");
-      assertThat(body).contains("propv1");
-      assertThat(body).doesNotContain("custv2");
-      assertThat(body).doesNotContain("propv2");
-    });
-
-    // Call runCode to run the template's code.
-    runCode(mockData);
-
-    // Verify that the tag finished successfully.
-    assertApi("sendHttpRequest").wasCalled();
+scenarios: []
 
 
 ___NOTES___

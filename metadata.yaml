@@ -1,5 +1,7 @@
 homepage: "https://stape.io/"
 versions:
+  - sha: defb166e132b71df9597396cca052b45725ffa0e
+    changeNotes: Remove tests.
   - sha: 1aea7b3ce653639f457ee4dba10cab0664a319b6
     changeNotes: Auth bug fixes.
   - sha: ff9baecd526fd646bbdb56676ca579c9c6d58ffe

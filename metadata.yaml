@@ -1,5 +1,7 @@
 homepage: "https://stape.io/"
 versions:
+  - sha: 81bc683597af8e808531b31f4ec84dc96c461b3d
+    changeNotes: Fix issue with event id.
   - sha: defb166e132b71df9597396cca052b45725ffa0e
     changeNotes: Remove tests.
   - sha: 1aea7b3ce653639f457ee4dba10cab0664a319b6

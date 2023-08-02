@@ -162,7 +162,7 @@ ___TEMPLATE_PARAMETERS___
       {
         "type": "TEXT",
         "name": "uniqueId",
-        "displayName": "Event Id",
+        "displayName": "Unique ID",
         "simpleValueType": true
       }
     ]
@@ -532,7 +532,6 @@ function sendEvent() {
 
   if (data.uniqueId) klaviyoEventData.data.attributes.unique_id = data.uniqueId;
   else if (eventData.unique_id) klaviyoEventData.data.attributes.unique_id = data.unique_id;
-  else if (eventData.event_id) klaviyoEventData.data.attributes.unique_id = data.event_id;
 
   klaviyoEventData.data.attributes.properties = getProperties();
   addViewedItemsIfNeeded(eventName, klaviyoEventData);

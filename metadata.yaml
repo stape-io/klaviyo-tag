@@ -1,5 +1,7 @@
 homepage: "https://stape.io/"
 versions:
+  - sha: 2e8b17a8cf3a8739fb767f734278bbc7ba8a53b7
+    changeNotes: Add active on site data.
   - sha: 81bc683597af8e808531b31f4ec84dc96c461b3d
     changeNotes: Fix issue with event id.
   - sha: defb166e132b71df9597396cca052b45725ffa0e

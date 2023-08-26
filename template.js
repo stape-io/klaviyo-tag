@@ -126,7 +126,7 @@ function sendEvent() {
       },
       {
         headers: {
-          'X-Forwarded-For': getRemoteAddress(),
+          'X-Forwarded-For': eventData.ip_override || getRemoteAddress(),
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           'Revision': klaviyoApiRevision,
@@ -161,6 +161,11 @@ function getProperties() {
 
   if (eventData.page_location) {
     klaviyoProperties.page = eventData.page_location;
+  }
+
+  if (data.type === 'active_on_site') {
+    klaviyoProperties['$is_session_activity'] = 'true';
+    klaviyoProperties['$use_ip'] = 'true';
   }
 
   if (data.properties) {

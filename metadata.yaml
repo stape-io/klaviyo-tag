@@ -1,5 +1,7 @@
 homepage: "https://stape.io/"
 versions:
+  - sha: c06fed2c219ba1eb812de229fa2c2241dbaa4617
+    changeNotes: Added user identity check.
   - sha: 2e8b17a8cf3a8739fb767f734278bbc7ba8a53b7
     changeNotes: Add active on site data.
   - sha: 81bc683597af8e808531b31f4ec84dc96c461b3d

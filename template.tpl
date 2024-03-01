@@ -504,44 +504,11 @@ function sendEvent() {
   let eventName = data.type === 'active_on_site' ? '__activity__' : data.event;
   let eventNameLogs = data.type === 'active_on_site' ? 'page_view' : data.event;
 
-  let klaviyoEventData = {
-    data: {
-      type: 'event',
-      attributes: {
-        properties: {},
-        metric: {
-          data: {
-            type: 'metric',
-            attributes: {
-              name: eventName
-            }
-          }
-        },
-        profile: {
-          data: {
-            type: 'profile',
-            attributes: {}
-          }
-        }
-      }
-    }
-  };
+  let klaviyoEventData = getKlaviyoEventData(eventName);
 
-  if (data.value) klaviyoEventData.data.attributes.value = data.value;
-  else if (eventData.value) klaviyoEventData.data.attributes.value = data.value;
-
-  if (data.uniqueId) klaviyoEventData.data.attributes.unique_id = data.uniqueId;
-  else if (eventData.unique_id)
-    klaviyoEventData.data.attributes.unique_id = data.unique_id;
-
-  klaviyoEventData.data.attributes.properties = getProperties();
-  addViewedItemsIfNeeded(eventName, klaviyoEventData);
-
-  klaviyoEventData.data.attributes.profile.data.attributes =
-    getCustomerProperties();
-  if (data.klaviyoUserId)
-    klaviyoEventData.data.attributes.profile.data.id = data.klaviyoUserId;
-
+  if (!hasUserIdentificationData(klaviyoEventData)) {
+    return data.gtmOnSuccess();
+  }
   let url = 'https://a.klaviyo.com/api/events/';
 
   if (isLoggingEnabled) {
@@ -599,7 +566,52 @@ function sendEvent() {
   }
 }
 
-function getProperties() {
+function getKlaviyoEventData(eventName) {
+  return {
+    data: {
+      type: 'event',
+      attributes: getAttributes(eventName)
+    }
+  };
+}
+
+function getAttributes(eventName) {
+  const attributes = {
+    properties: getProperties(eventName),
+    metric: {
+      data: {
+        type: 'metric',
+        attributes: {
+          name: eventName
+        }
+      }
+    },
+    profile: {
+      data: getProfileData()
+    }
+  };
+
+  const uniqueId = data.unique_id || eventData.unique_id;
+  if (uniqueId) attributes.unique_id = uniqueId;
+
+  const value = data.value || eventData.value;
+  if (value) attributes.value = value;
+
+  return attributes;
+}
+
+function getProfileData() {
+  const profileData = {
+    type: 'profile',
+    attributes: getCustomerProperties()
+  };
+  if (data.klaviyoUserId) {
+    profileData.id = data.klaviyoUserId;
+  }
+  return profileData;
+}
+
+function getProperties(eventName) {
   let klaviyoProperties = {};
 
   if (data.forwardAllProperties) {
@@ -629,6 +641,14 @@ function getProperties() {
   if (data.properties) {
     for (let key in data.properties) {
       klaviyoProperties[data.properties[key].name] = data.properties[key].value;
+    }
+  }
+
+  if (eventName === 'Viewed Product') {
+    let viewedItems = getViewedItems();
+
+    if (viewedItems.length) {
+      klaviyoProperties['$viewed_items'] = viewedItems;
     }
   }
 
@@ -869,15 +889,13 @@ function hasItem(arr, item) {
   return false;
 }
 
-function addViewedItemsIfNeeded(eventName, klaviyoEventData) {
-  if (eventName === 'Viewed Product') {
-    let viewedItems = getViewedItems();
-
-    if (viewedItems.length > 0) {
-      klaviyoEventData.data.attributes.properties['$viewed_items'] =
-        getViewedItems();
-    }
-  }
+function hasUserIdentificationData(klaviyoEventData) {
+  const profileData = klaviyoEventData.data.attributes.profile.data;
+  return (
+    !!profileData.id ||
+    !!profileData.attributes.email ||
+    !!profileData.attributes._kx
+  );
 }
 
 

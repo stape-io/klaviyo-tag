@@ -485,7 +485,7 @@ const eventPropertiesToIgnore = [
   'user_agent',
   'x-ga-js_client_id',
   'screen_resolution',
-  'x-ga-mp2-user_properties',
+  'x-ga-mp2-user_properties'
 ];
 
 const isLoggingEnabled = determinateIsLoggingEnabled();
@@ -505,22 +505,22 @@ function sendEvent() {
   let eventNameLogs = data.type === 'active_on_site' ? 'page_view' : data.event;
 
   let klaviyoEventData = {
-    'data': {
-      'type': 'event',
-      'attributes': {
-        'properties': {},
-        'metric': {
-          'data': {
-            'type': 'metric',
-            'attributes': {
-              'name': eventName
+    data: {
+      type: 'event',
+      attributes: {
+        properties: {},
+        metric: {
+          data: {
+            type: 'metric',
+            attributes: {
+              name: eventName
             }
           }
         },
-        'profile': {
-          'data': {
-            'type': 'profile',
-            'attributes': {}
+        profile: {
+          data: {
+            type: 'profile',
+            attributes: {}
           }
         }
       }
@@ -531,64 +531,67 @@ function sendEvent() {
   else if (eventData.value) klaviyoEventData.data.attributes.value = data.value;
 
   if (data.uniqueId) klaviyoEventData.data.attributes.unique_id = data.uniqueId;
-  else if (eventData.unique_id) klaviyoEventData.data.attributes.unique_id = data.unique_id;
+  else if (eventData.unique_id)
+    klaviyoEventData.data.attributes.unique_id = data.unique_id;
 
   klaviyoEventData.data.attributes.properties = getProperties();
   addViewedItemsIfNeeded(eventName, klaviyoEventData);
 
-  klaviyoEventData.data.attributes.profile.data.attributes = getCustomerProperties();
-  if (data.klaviyoUserId) klaviyoEventData.data.attributes.profile.data.id = data.klaviyoUserId;
+  klaviyoEventData.data.attributes.profile.data.attributes =
+    getCustomerProperties();
+  if (data.klaviyoUserId)
+    klaviyoEventData.data.attributes.profile.data.id = data.klaviyoUserId;
 
   let url = 'https://a.klaviyo.com/api/events/';
 
   if (isLoggingEnabled) {
     logToConsole(
-        JSON.stringify({
-          Name: 'Klaviyo',
-          Type: 'Request',
-          TraceId: traceId,
-          EventName: eventNameLogs,
-          RequestMethod: 'POST',
-          RequestUrl: url,
-          RequestBody: klaviyoEventData,
-        })
+      JSON.stringify({
+        Name: 'Klaviyo',
+        Type: 'Request',
+        TraceId: traceId,
+        EventName: eventNameLogs,
+        RequestMethod: 'POST',
+        RequestUrl: url,
+        RequestBody: klaviyoEventData
+      })
     );
   }
 
   sendHttpRequest(
-      url,
-      (statusCode, headers, body) => {
-        logToConsole(
-            JSON.stringify({
-              Name: 'Klaviyo',
-              Type: 'Response',
-              TraceId: traceId,
-              EventName: eventNameLogs,
-              ResponseStatusCode: statusCode,
-              ResponseHeaders: headers,
-              ResponseBody: body,
-            })
-        );
+    url,
+    (statusCode, headers, body) => {
+      logToConsole(
+        JSON.stringify({
+          Name: 'Klaviyo',
+          Type: 'Response',
+          TraceId: traceId,
+          EventName: eventNameLogs,
+          ResponseStatusCode: statusCode,
+          ResponseHeaders: headers,
+          ResponseBody: body
+        })
+      );
 
-        if (!data.useOptimisticScenario) {
-          if (statusCode >= 200 && statusCode < 300) {
-            data.gtmOnSuccess();
-          } else {
-            data.gtmOnFailure();
-          }
+      if (!data.useOptimisticScenario) {
+        if (statusCode >= 200 && statusCode < 300) {
+          data.gtmOnSuccess();
+        } else {
+          data.gtmOnFailure();
         }
+      }
+    },
+    {
+      headers: {
+        'X-Forwarded-For': eventData.ip_override || getRemoteAddress(),
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Revision: klaviyoApiRevision,
+        Authorization: 'Klaviyo-API-Key ' + data.apiKey
       },
-      {
-        headers: {
-          'X-Forwarded-For': eventData.ip_override || getRemoteAddress(),
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Revision': klaviyoApiRevision,
-          'Authorization': 'Klaviyo-API-Key ' + data.apiKey,
-        },
-        method: 'POST'
-      },
-      JSON.stringify(klaviyoEventData)
+      method: 'POST'
+    },
+    JSON.stringify(klaviyoEventData)
   );
 
   if (data.useOptimisticScenario) {
@@ -601,7 +604,8 @@ function getProperties() {
 
   if (data.forwardAllProperties) {
     let excludeKeys = [];
-    if (data.excludeForwardingProperties) excludeKeys = data.excludeForwardingProperties.map((n) => n.name);
+    if (data.excludeForwardingProperties)
+      excludeKeys = data.excludeForwardingProperties.map((n) => n.name);
 
     for (let key in eventData) {
       const shouldIgnore = hasItem(eventPropertiesToIgnore, key);
@@ -633,7 +637,7 @@ function getProperties() {
 
 function getCustomerProperties() {
   let customerProperties = {
-    'properties': {},
+    properties: {}
   };
 
   if (data.email) customerProperties.email = data.email;
@@ -652,11 +656,13 @@ function getCustomerProperties() {
     if (kxCookie.length) customerProperties['_kx'] = kxCookie[0];
   }
 
-  if (eventData.page_referrer) customerProperties.properties['$last_referrer'] = eventData.page_referrer;
+  if (eventData.page_referrer)
+    customerProperties.properties['$last_referrer'] = eventData.page_referrer;
 
   if (data.customerStandardProperties) {
     for (let key in data.customerStandardProperties) {
-      customerProperties[data.customerStandardProperties[key].name] = data.customerStandardProperties[key].value;
+      customerProperties[data.customerStandardProperties[key].name] =
+        data.customerStandardProperties[key].value;
     }
   }
 
@@ -664,13 +670,15 @@ function getCustomerProperties() {
     customerProperties.location = {};
 
     for (let key in data.customerLocationProperties) {
-      customerProperties.location[data.customerLocationProperties[key].name] = data.customerLocationProperties[key].value;
+      customerProperties.location[data.customerLocationProperties[key].name] =
+        data.customerLocationProperties[key].value;
     }
   }
 
   if (data.customerProperties) {
     for (let key in data.customerProperties) {
-      customerProperties.properties[data.customerProperties[key].name] = data.customerProperties[key].value;
+      customerProperties.properties[data.customerProperties[key].name] =
+        data.customerProperties[key].value;
     }
   }
 
@@ -692,7 +700,7 @@ function storeCookie(name, value) {
     samesite: 'Lax',
     secure: true,
     'max-age': 63072000, // 2 years
-    httpOnly: false,
+    httpOnly: false
   });
 }
 
@@ -720,8 +728,8 @@ function getViewedItems() {
 function updateViewedItems(viewedItems) {
   for (let key in viewedItems) {
     if (
-        viewedItems[key].ItemId &&
-        makeString(viewedItems[key].ItemId) === eventData.ItemId
+      viewedItems[key].ItemId &&
+      makeString(viewedItems[key].ItemId) === eventData.ItemId
     ) {
       viewedItems[key].Views = makeInteger(viewedItems[key].Views) + 1;
 
@@ -738,10 +746,10 @@ function updateViewedItems(viewedItems) {
     Metadata: {
       Brand: eventData.Brand || eventData.brand,
       Price: eventData.Price || eventData.price,
-      CompareAtPrice: eventData.CompareAtPrice,
+      CompareAtPrice: eventData.CompareAtPrice
     },
     Views: 1,
-    LastViewedDate: makeInteger(getTimestampMillis() / 1000),
+    LastViewedDate: makeInteger(getTimestampMillis() / 1000)
   });
 
   return viewedItems;
@@ -750,8 +758,8 @@ function updateViewedItems(viewedItems) {
 function determinateIsLoggingEnabled() {
   const containerVersion = getContainerVersion();
   const isDebug = !!(
-      containerVersion &&
-      (containerVersion.debugMode || containerVersion.previewMode)
+    containerVersion &&
+    (containerVersion.debugMode || containerVersion.previewMode)
   );
 
   if (!data.logType) {
@@ -773,25 +781,25 @@ function addToList() {
   let url = 'https://a.klaviyo.com/api/profile-subscription-bulk-create-jobs/';
 
   let addToListData = {
-    'data': {
-      'type': 'profile-subscription-bulk-create-job',
-      'attributes': {
-        'profiles': {
-          'data': [
+    data: {
+      type: 'profile-subscription-bulk-create-job',
+      attributes: {
+        profiles: {
+          data: [
             {
-              'type': 'profile',
-              'attributes': {
-                'email': data.email
+              type: 'profile',
+              attributes: {
+                email: data.email
               }
             }
           ]
         }
       },
-      'relationships': {
-        'list': {
-          'data': {
-            'type': 'list',
-            'id': data.listId
+      relationships: {
+        list: {
+          data: {
+            type: 'list',
+            id: data.listId
           }
         }
       }
@@ -800,52 +808,52 @@ function addToList() {
 
   if (isLoggingEnabled) {
     logToConsole(
-        JSON.stringify({
-          Name: 'Klaviyo',
-          Type: 'Request',
-          TraceId: traceId,
-          EventName: 'add_to_list',
-          RequestMethod: 'POST',
-          RequestUrl: url,
-          RequestBody: addToListData,
-        })
+      JSON.stringify({
+        Name: 'Klaviyo',
+        Type: 'Request',
+        TraceId: traceId,
+        EventName: 'add_to_list',
+        RequestMethod: 'POST',
+        RequestUrl: url,
+        RequestBody: addToListData
+      })
     );
   }
 
   sendHttpRequest(
-      url,
-      (statusCode, headers, body) => {
-        logToConsole(
-            JSON.stringify({
-              Name: 'Klaviyo',
-              Type: 'Response',
-              TraceId: traceId,
-              EventName: 'add_to_list',
-              ResponseStatusCode: statusCode,
-              ResponseHeaders: headers,
-              ResponseBody: body,
-            })
-        );
+    url,
+    (statusCode, headers, body) => {
+      logToConsole(
+        JSON.stringify({
+          Name: 'Klaviyo',
+          Type: 'Response',
+          TraceId: traceId,
+          EventName: 'add_to_list',
+          ResponseStatusCode: statusCode,
+          ResponseHeaders: headers,
+          ResponseBody: body
+        })
+      );
 
-        if (!data.useOptimisticScenario) {
-          if (statusCode >= 200 && statusCode < 300) {
-            data.gtmOnSuccess();
-          } else {
-            data.gtmOnFailure();
-          }
+      if (!data.useOptimisticScenario) {
+        if (statusCode >= 200 && statusCode < 300) {
+          data.gtmOnSuccess();
+        } else {
+          data.gtmOnFailure();
         }
+      }
+    },
+    {
+      headers: {
+        'X-Forwarded-For': getRemoteAddress(),
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Revision: klaviyoApiRevision,
+        Authorization: 'Klaviyo-API-Key ' + data.apiKey
       },
-      {
-        headers: {
-          'X-Forwarded-For': getRemoteAddress(),
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Revision': klaviyoApiRevision,
-          'Authorization': 'Klaviyo-API-Key ' + data.apiKey,
-        },
-        method: 'POST',
-      },
-      JSON.stringify(addToListData)
+      method: 'POST'
+    },
+    JSON.stringify(addToListData)
   );
 
   if (data.useOptimisticScenario) {
@@ -866,7 +874,8 @@ function addViewedItemsIfNeeded(eventName, klaviyoEventData) {
     let viewedItems = getViewedItems();
 
     if (viewedItems.length > 0) {
-      klaviyoEventData.data.attributes.properties['$viewed_items'] = getViewedItems();
+      klaviyoEventData.data.attributes.properties['$viewed_items'] =
+        getViewedItems();
     }
   }
 }

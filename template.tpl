@@ -894,7 +894,8 @@ function hasUserIdentificationData(klaviyoEventData) {
   return (
     !!profileData.id ||
     !!profileData.attributes.email ||
-    !!profileData.attributes._kx
+    !!profileData.attributes._kx ||
+    !!profileData.attributes.external_id
   );
 }
 

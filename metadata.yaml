@@ -1,5 +1,7 @@
 homepage: "https://stape.io/"
 versions:
+  - sha: e5257f62b01b703b7cf312ad52e3ffd343cf9967
+    changeNotes: Allow external_id to be the sole customer identifier for events.
   - sha: c06fed2c219ba1eb812de229fa2c2241dbaa4617
     changeNotes: Added user identity check.
   - sha: 2e8b17a8cf3a8739fb767f734278bbc7ba8a53b7

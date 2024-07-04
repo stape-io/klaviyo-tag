@@ -38,7 +38,7 @@ const isLoggingEnabled = determinateIsLoggingEnabled();
 const traceId = isLoggingEnabled ? getRequestHeader('trace-id') : undefined;
 
 const eventData = getAllEventData();
-const klaviyoApiRevision = '2023-07-15';
+const klaviyoApiRevision = '2024-06-15';
 
 if (data.type === 'addToList') {
   addToList();
@@ -137,7 +137,7 @@ function getAttributes(eventName) {
     }
   };
 
-  const uniqueId = data.unique_id || eventData.unique_id;
+  const uniqueId = data.uniqueId || eventData.unique_id;
   if (uniqueId) attributes.unique_id = uniqueId;
 
   const value = data.value || eventData.value;
@@ -248,7 +248,7 @@ function getCustomerProperties() {
     }
   }
 
-  if (customerProperties.email) {
+  if (customerProperties.email && data.storeEmail) {
     storeCookie('email', customerProperties.email);
   }
 
@@ -371,6 +371,16 @@ function addToList() {
       }
     }
   };
+
+  if (data.subscribeToMarketingEmails) {
+    addToListData.data.attributes.subscriptions = {
+      email: {
+        marketing: {
+          consent: 'SUBSCRIBED'
+        }
+      }
+    };
+  }
 
   if (isLoggingEnabled) {
     logToConsole(

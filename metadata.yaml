@@ -1,5 +1,7 @@
 homepage: "https://stape.io/"
 versions:
+  - sha: 374d9fb523f4034cc10f464966379c06475e73c4
+    changeNotes: Fix email marketing subscription.
   - sha: 7140d1a3f2e8d724f2efb732b01fd38dd479557d
     changeNotes: Update API to 2024-06-15 & fix issues.
   - sha: e5257f62b01b703b7cf312ad52e3ffd343cf9967

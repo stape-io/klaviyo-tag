@@ -841,7 +841,7 @@ function addToList() {
   };
 
   if (data.subscribeToMarketingEmails) {
-    addToListData.data.attributes.subscriptions = {
+    addToListData.data.attributes.profiles.data[0].attributes.subscriptions = {
       email: {
         marketing: {
           consent: 'SUBSCRIBED'

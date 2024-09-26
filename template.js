@@ -371,16 +371,23 @@ function addToList() {
       }
     }
   };
-
+  
+  let subscriptions = {};
   if (data.subscribeToMarketingEmails) {
-    addToListData.data.attributes.profiles.data[0].attributes.subscriptions = {
-      email: {
-        marketing: {
-          consent: 'SUBSCRIBED'
-        }
+    subscriptions.email = {
+      marketing: {
+        consent: 'SUBSCRIBED'
       }
     };
   }
+  if (data.subscribeToMarketingSMS) {
+    subscriptions.sms = {
+      marketing: {
+        consent: 'SUBSCRIBED'
+      }
+    };
+  }
+  addToListData.data.attributes.profiles.data[0].attributes.subscriptions = subscriptions;
 
   if (isLoggingEnabled) {
     logToConsole(

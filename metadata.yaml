@@ -1,5 +1,7 @@
 homepage: "https://stape.io/"
 versions:
+  - sha: c2f70eb1712bd1fc8e0b0eb980936c5023ba0d91
+    changeNotes: Added sms marketing subscription.
   - sha: 374d9fb523f4034cc10f464966379c06475e73c4
     changeNotes: Fix email marketing subscription.
   - sha: 7140d1a3f2e8d724f2efb732b01fd38dd479557d

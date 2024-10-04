@@ -95,6 +95,25 @@ ___TEMPLATE_PARAMETERS___
   },
   {
     "type": "TEXT",
+    "name": "phone",
+    "displayName": "Phone",
+    "simpleValueType": true,
+    "help": "Phone number of the user needed for SMS marketing",
+    "enablingConditions": [
+      {
+        "paramName": "subscribeToMarketingSMS",
+        "paramValue": true,
+        "type": "EQUALS"
+      }
+    ],
+    "valueValidators": [
+      {
+        "type": "NON_EMPTY"
+      }
+    ]
+  },
+  {
+    "type": "TEXT",
     "name": "klaviyoUserId",
     "displayName": "Klaviyo User ID",
     "simpleValueType": true,
@@ -868,6 +887,11 @@ function addToList() {
         consent: 'SUBSCRIBED'
       }
     };
+    let phone = '';
+    if(data.phone) {
+      phone = data.phone;
+    }
+    addToListData.data.attributes.profiles.data[0].attributes.phone_number = phone;
   }
   addToListData.data.attributes.profiles.data[0].attributes.subscriptions = subscriptions;
 

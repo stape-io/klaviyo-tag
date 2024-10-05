@@ -95,6 +95,25 @@ ___TEMPLATE_PARAMETERS___
   },
   {
     "type": "TEXT",
+    "name": "phone",
+    "displayName": "Phone",
+    "simpleValueType": true,
+    "help": "Phone number of the user needed for SMS marketing",
+    "enablingConditions": [
+      {
+        "paramName": "subscribeToMarketingSMS",
+        "paramValue": true,
+        "type": "EQUALS"
+      }
+    ],
+    "valueValidators": [
+      {
+        "type": "NON_EMPTY"
+      }
+    ]
+  },
+  {
+    "type": "TEXT",
     "name": "klaviyoUserId",
     "displayName": "Klaviyo User ID",
     "simpleValueType": true,
@@ -130,6 +149,20 @@ ___TEMPLATE_PARAMETERS___
     "type": "CHECKBOX",
     "name": "subscribeToMarketingEmails",
     "checkboxText": "Subscribe to marketing emails",
+    "simpleValueType": true,
+    "enablingConditions": [
+      {
+        "paramName": "type",
+        "paramValue": "addToList",
+        "type": "EQUALS"
+      }
+    ],
+    "help": "Pass marketing consent state as SUBSCRIBED"
+  },
+  {
+    "type": "CHECKBOX",
+    "name": "subscribeToMarketingSMS",
+    "checkboxText": "Subscribe to marketing SMS",
     "simpleValueType": true,
     "enablingConditions": [
       {
@@ -839,16 +872,28 @@ function addToList() {
       }
     }
   };
-
+  
+  let subscriptions = {};
   if (data.subscribeToMarketingEmails) {
-    addToListData.data.attributes.profiles.data[0].attributes.subscriptions = {
-      email: {
-        marketing: {
-          consent: 'SUBSCRIBED'
-        }
+    subscriptions.email = {
+      marketing: {
+        consent: 'SUBSCRIBED'
       }
     };
   }
+  if (data.subscribeToMarketingSMS) {
+    subscriptions.sms = {
+      marketing: {
+        consent: 'SUBSCRIBED'
+      }
+    };
+    let phone = '';
+    if(data.phone) {
+      phone = data.phone;
+    }
+    addToListData.data.attributes.profiles.data[0].attributes.phone_number = phone;
+  }
+  addToListData.data.attributes.profiles.data[0].attributes.subscriptions = subscriptions;
 
   if (isLoggingEnabled) {
     logToConsole(

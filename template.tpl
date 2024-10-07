@@ -83,7 +83,8 @@ ___TEMPLATE_PARAMETERS___
         "type": "EQUALS"
       }
     ],
-    "displayName": "List ID"
+    "displayName": "List ID",
+    "help": "Klaviyo list ID to subscribe."
   },
   {
     "type": "TEXT",
@@ -98,7 +99,7 @@ ___TEMPLATE_PARAMETERS___
     "name": "phone",
     "displayName": "Phone",
     "simpleValueType": true,
-    "help": "Phone number of the user needed for SMS marketing",
+    "help": "Phone is required in SMS marketing. Must be in E.164 format, without spaces and \"-\" \u003ca href\u003d\"https://developers.klaviyo.com/en/docs/collect_email_and_sms_consent_via_api#phone-number-validation\" target\u003d\"_blank\"\u003eLearn more\u003c/a\u003e",
     "enablingConditions": [
       {
         "paramName": "subscribeToMarketingSMS",
@@ -110,7 +111,8 @@ ___TEMPLATE_PARAMETERS___
       {
         "type": "NON_EMPTY"
       }
-    ]
+    ],
+    "valueHint": "+15005550006"
   },
   {
     "type": "TEXT",

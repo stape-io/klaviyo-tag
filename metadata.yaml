@@ -1,5 +1,7 @@
 homepage: "https://stape.io/"
 versions:
+  - sha: c23350035e89fd29a734c3246c4cfd12f3739eab
+    changeNotes: Do not retrieve and use email from cookie if storing not enabled.
   - sha: c2f70eb1712bd1fc8e0b0eb980936c5023ba0d91
     changeNotes: Added sms marketing subscription.
   - sha: 374d9fb523f4034cc10f464966379c06475e73c4

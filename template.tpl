@@ -709,7 +709,7 @@ function getCustomerProperties() {
 
   if (data.email) customerProperties.email = data.email;
   else if (eventData.email) customerProperties.email = eventData.email;
-  else {
+  else if (data.storeEmail) {
     let emailCookie = getCookieValues('stape_klaviyo_email');
     if (emailCookie.length) customerProperties.email = emailCookie[0];
   }

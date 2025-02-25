@@ -585,7 +585,6 @@ const decodeUriComponent = require('decodeUriComponent');
 const getContainerVersion = require('getContainerVersion');
 const logToConsole = require('logToConsole');
 const getRequestHeader = require('getRequestHeader');
-const getType = require('getType');
 
 const eventPropertiesToIgnore = [
   'x-ga-protocol_version',

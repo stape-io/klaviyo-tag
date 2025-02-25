@@ -66,7 +66,7 @@ ___TEMPLATE_PARAMETERS___
     "name": "apiKey",
     "displayName": "Private API Key",
     "simpleValueType": true,
-    "help": "Follow this guide if you don\u0027t know \u003ca href\u003d\"https://developers.klaviyo.com/en/docs/authenticate_#private-key-authentication\" target\u003d\"_blank\"\u003eHow to Find your API Key\u003c/a\u003e",
+    "help": "Follow this guide if you don\u0027t know \u003ca href\u003d\"https://help.klaviyo.com/hc/en-us/articles/115005062267-How-to-Manage-Your-Account-s-API-Keys#find-your-api-keys1\" target\u003d\"_blank\"\u003eHow to Find your API Key\u003c/a\u003e",
     "valueValidators": [
       {
         "type": "NON_EMPTY"

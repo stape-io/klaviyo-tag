@@ -1,4 +1,4 @@
-﻿const sendHttpRequest = require('sendHttpRequest');
+const sendHttpRequest = require('sendHttpRequest');
 const getAllEventData = require('getAllEventData');
 const makeInteger = require('makeInteger');
 const makeString = require('makeString');
@@ -11,6 +11,7 @@ const decodeUriComponent = require('decodeUriComponent');
 const getContainerVersion = require('getContainerVersion');
 const logToConsole = require('logToConsole');
 const getRequestHeader = require('getRequestHeader');
+const getType = require('getType');
 
 const eventPropertiesToIgnore = [
   'x-ga-protocol_version',
@@ -34,28 +35,47 @@ const eventPropertiesToIgnore = [
   'x-ga-mp2-user_properties'
 ];
 
+const actionTypes = {
+  ADD_TO_LIST: 'addToList',
+  EVENT: 'event',
+  ACTIVE_ON_SITE: 'active_on_site',
+  CREATE_OR_UPDATE_PROFILE: 'createOrUpdateProfile'
+};
+const klaviyoApiRevision = '2024-06-15';
+
 const isLoggingEnabled = determinateIsLoggingEnabled();
 const traceId = isLoggingEnabled ? getRequestHeader('trace-id') : undefined;
 
 const eventData = getAllEventData();
-const klaviyoApiRevision = '2024-06-15';
 
-if (data.type === 'addToList') {
-  addToList();
-} else {
-  sendEvent();
+switch (data.type) {
+  case actionTypes.ADD_TO_LIST:
+    addToList();
+    break;
+  case actionTypes.EVENT:
+  case actionTypes.ACTIVE_ON_SITE:
+    sendEvent();
+    break;
+  case actionTypes.CREATE_OR_UPDATE_PROFILE:
+    createOrUpdateProfile();
+    break;
+}
+
+if (data.useOptimisticScenario) {
+  data.gtmOnSuccess();
 }
 
 function sendEvent() {
-  let eventName = data.type === 'active_on_site' ? '__activity__' : data.event;
-  let eventNameLogs = data.type === 'active_on_site' ? 'page_view' : data.event;
+  const eventName = data.type === actionTypes.ACTIVE_ON_SITE ? '__activity__' : data.event;
+  const eventNameLogs = data.type === actionTypes.ACTIVE_ON_SITE ? 'page_view' : data.event;
 
-  let klaviyoEventData = getKlaviyoEventData(eventName);
+  const klaviyoEventData = getKlaviyoEventData(eventName);
 
   if (!hasUserIdentificationData(klaviyoEventData)) {
     return data.gtmOnSuccess();
   }
-  let url = 'https://a.klaviyo.com/api/events/';
+  
+  const url = 'https://a.klaviyo.com/api/events/';
 
   if (isLoggingEnabled) {
     logToConsole(
@@ -95,21 +115,159 @@ function sendEvent() {
       }
     },
     {
-      headers: {
-        'X-Forwarded-For': eventData.ip_override || getRemoteAddress(),
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        Revision: klaviyoApiRevision,
-        Authorization: 'Klaviyo-API-Key ' + data.apiKey
-      },
+      headers: buildRequestHeaders(),
       method: 'POST'
     },
     JSON.stringify(klaviyoEventData)
   );
+}
 
-  if (data.useOptimisticScenario) {
-    data.gtmOnSuccess();
+function addToList() {
+  const url = 'https://a.klaviyo.com/api/profile-subscription-bulk-create-jobs/';
+
+  const addToListData = {
+    data: {
+      type: 'profile-subscription-bulk-create-job',
+      attributes: {
+        profiles: {
+          data: [
+            {
+              type: 'profile',
+              attributes: {
+                email: data.email
+              }
+            }
+          ]
+        }
+      },
+      relationships: {
+        list: {
+          data: {
+            type: 'list',
+            id: data.listId
+          }
+        }
+      }
+    }
+  };
+  
+  const subscriptions = {};
+  if (data.subscribeToMarketingEmails) {
+    subscriptions.email = {
+      marketing: {
+        consent: 'SUBSCRIBED'
+      }
+    };
   }
+  if (data.subscribeToMarketingSMS) {
+    subscriptions.sms = {
+      marketing: {
+        consent: 'SUBSCRIBED'
+      }
+    };
+    let phone = '';
+    if (data.phone) {
+      phone = data.phone;
+    }
+    addToListData.data.attributes.profiles.data[0].attributes.phone_number = phone;
+  }
+  addToListData.data.attributes.profiles.data[0].attributes.subscriptions = subscriptions;
+
+  if (isLoggingEnabled) {
+    logToConsole(
+      JSON.stringify({
+        Name: 'Klaviyo',
+        Type: 'Request',
+        TraceId: traceId,
+        EventName: 'add_to_list',
+        RequestMethod: 'POST',
+        RequestUrl: url,
+        RequestBody: addToListData
+      })
+    );
+  }
+
+  sendHttpRequest(
+    url,
+    (statusCode, headers, body) => {
+      logToConsole(
+        JSON.stringify({
+          Name: 'Klaviyo',
+          Type: 'Response',
+          TraceId: traceId,
+          EventName: 'add_to_list',
+          ResponseStatusCode: statusCode,
+          ResponseHeaders: headers,
+          ResponseBody: body
+        })
+      );
+
+      if (!data.useOptimisticScenario) {
+        if (statusCode >= 200 && statusCode < 300) {
+          data.gtmOnSuccess();
+        } else {
+          data.gtmOnFailure();
+        }
+      }
+    },
+    {
+      headers: buildRequestHeaders(),
+      method: 'POST'
+    },
+    JSON.stringify(addToListData)
+  );
+}
+
+function createOrUpdateProfile() {
+  const url = 'https://a.klaviyo.com/api/profile-import/';
+  
+  const updateProfileData = {
+    data: getProfileData()
+  };
+  
+  if (isLoggingEnabled) {
+    logToConsole(
+      JSON.stringify({
+        Name: 'Klaviyo',
+        Type: 'Request',
+        TraceId: traceId,
+        EventName: 'createOrUpdateProfile',
+        RequestMethod: 'POST',
+        RequestUrl: url,
+        RequestBody: updateProfileData
+      })
+    );
+  }
+  
+  sendHttpRequest(
+    url,
+    (statusCode, headers, body) => {
+      logToConsole(
+        JSON.stringify({
+          Name: 'Klaviyo',
+          Type: 'Response',
+          TraceId: traceId,
+          EventName: 'createOrUpdateProfile',
+          ResponseStatusCode: statusCode,
+          ResponseHeaders: headers,
+          ResponseBody: body
+        })
+      );
+
+      if (!data.useOptimisticScenario) {
+        if (statusCode >= 200 && statusCode < 300) {
+          data.gtmOnSuccess();
+        } else {
+          data.gtmOnFailure();
+        }
+      }
+    },
+    {
+      headers: buildRequestHeaders(),
+      method: 'POST'
+    },
+    JSON.stringify(updateProfileData)
+  );
 }
 
 function getKlaviyoEventData(eventName) {
@@ -151,14 +309,13 @@ function getProfileData() {
     type: 'profile',
     attributes: getCustomerProperties()
   };
-  if (data.klaviyoUserId) {
-    profileData.id = data.klaviyoUserId;
-  }
+  if (data.klaviyoUserId) profileData.id = data.klaviyoUserId;
+
   return profileData;
 }
 
 function getProperties(eventName) {
-  let klaviyoProperties = {};
+  const klaviyoProperties = {};
 
   if (data.forwardAllProperties) {
     let excludeKeys = [];
@@ -179,7 +336,7 @@ function getProperties(eventName) {
     klaviyoProperties.page = eventData.page_location;
   }
 
-  if (data.type === 'active_on_site') {
+  if (data.type === actionTypes.ACTIVE_ON_SITE) {
     klaviyoProperties['$is_session_activity'] = 'true';
     klaviyoProperties['$use_ip'] = 'true';
   }
@@ -202,7 +359,7 @@ function getProperties(eventName) {
 }
 
 function getCustomerProperties() {
-  let customerProperties = {
+  const customerProperties = {
     properties: {}
   };
 
@@ -272,7 +429,7 @@ function storeCookie(name, value) {
 
 function getViewedItems() {
   let viewedItems = [];
-  let viewedItemsCookie = getCookieValues('stape_klaviyo_viewed_items');
+  const viewedItemsCookie = getCookieValues('stape_klaviyo_viewed_items');
 
   if (viewedItemsCookie.length && viewedItemsCookie[0]) {
     viewedItems = JSON.parse(viewedItemsCookie[0]);
@@ -321,6 +478,36 @@ function updateViewedItems(viewedItems) {
   return viewedItems;
 }
 
+function hasUserIdentificationData(klaviyoEventData) {
+  const profileData = klaviyoEventData.data.attributes.profile.data;
+  return (
+    !!profileData.id ||
+    !!profileData.attributes.email ||
+    !!profileData.attributes._kx ||
+    !!profileData.attributes.external_id
+  );
+}
+
+function hasItem(arr, item) {
+  for (let k in arr) {
+    if (arr[k] === item) return true;
+  }
+
+  return false;
+}
+
+function buildRequestHeaders() {
+  return {
+    'X-Forwarded-For': eventData.ip_override 
+      ? eventData.ip_override.split(' ').join('').split(',')[0]
+      : getRemoteAddress(),
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    Revision: klaviyoApiRevision,
+    Authorization: 'Klaviyo-API-Key ' + data.apiKey
+  };
+}
+
 function determinateIsLoggingEnabled() {
   const containerVersion = getContainerVersion();
   const isDebug = !!(
@@ -341,128 +528,4 @@ function determinateIsLoggingEnabled() {
   }
 
   return data.logType === 'always';
-}
-
-function addToList() {
-  let url = 'https://a.klaviyo.com/api/profile-subscription-bulk-create-jobs/';
-
-  let addToListData = {
-    data: {
-      type: 'profile-subscription-bulk-create-job',
-      attributes: {
-        profiles: {
-          data: [
-            {
-              type: 'profile',
-              attributes: {
-                email: data.email
-              }
-            }
-          ]
-        }
-      },
-      relationships: {
-        list: {
-          data: {
-            type: 'list',
-            id: data.listId
-          }
-        }
-      }
-    }
-  };
-  
-  let subscriptions = {};
-  if (data.subscribeToMarketingEmails) {
-    subscriptions.email = {
-      marketing: {
-        consent: 'SUBSCRIBED'
-      }
-    };
-  }
-  if (data.subscribeToMarketingSMS) {
-    subscriptions.sms = {
-      marketing: {
-        consent: 'SUBSCRIBED'
-      }
-    };
-    let phone = '';
-    if(data.phone) {
-      phone = data.phone;
-    }
-    addToListData.data.attributes.profiles.data[0].attributes.phone_number = phone;
-  }
-  addToListData.data.attributes.profiles.data[0].attributes.subscriptions = subscriptions;
-
-  if (isLoggingEnabled) {
-    logToConsole(
-      JSON.stringify({
-        Name: 'Klaviyo',
-        Type: 'Request',
-        TraceId: traceId,
-        EventName: 'add_to_list',
-        RequestMethod: 'POST',
-        RequestUrl: url,
-        RequestBody: addToListData
-      })
-    );
-  }
-
-  sendHttpRequest(
-    url,
-    (statusCode, headers, body) => {
-      logToConsole(
-        JSON.stringify({
-          Name: 'Klaviyo',
-          Type: 'Response',
-          TraceId: traceId,
-          EventName: 'add_to_list',
-          ResponseStatusCode: statusCode,
-          ResponseHeaders: headers,
-          ResponseBody: body
-        })
-      );
-
-      if (!data.useOptimisticScenario) {
-        if (statusCode >= 200 && statusCode < 300) {
-          data.gtmOnSuccess();
-        } else {
-          data.gtmOnFailure();
-        }
-      }
-    },
-    {
-      headers: {
-        'X-Forwarded-For': getRemoteAddress(),
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        Revision: klaviyoApiRevision,
-        Authorization: 'Klaviyo-API-Key ' + data.apiKey
-      },
-      method: 'POST'
-    },
-    JSON.stringify(addToListData)
-  );
-
-  if (data.useOptimisticScenario) {
-    data.gtmOnSuccess();
-  }
-}
-
-function hasItem(arr, item) {
-  for (let k in arr) {
-    if (arr[k] === item) return true;
-  }
-
-  return false;
-}
-
-function hasUserIdentificationData(klaviyoEventData) {
-  const profileData = klaviyoEventData.data.attributes.profile.data;
-  return (
-    !!profileData.id ||
-    !!profileData.attributes.email ||
-    !!profileData.attributes._kx ||
-    !!profileData.attributes.external_id
-  );
 }

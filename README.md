@@ -10,11 +10,12 @@ Klaviyo tag for sGTM communicates directly with Klaviyo API and allows adding co
 3. Select the action type you want to track.
 4. Add contact email, event and contact properties.
 
-More detailed description of [how to setting up the Klaviyo tag in the sGTM](https://stape.io/integrate-klaviyo-with-your-website-using-google-tag-manager-server-container/) can be found by this link.
+A more detailed description of [how to set up the Klaviyo tag in the sGTM](https://stape.io/integrate-klaviyo-with-your-website-using-google-tag-manager-server-container/) can be found at this link.
 
 #### Supported events
 
 - Add a new contact to Klaviyo
+- Update an existing contact information
 - Track contact activity on-site
 - Send events and parameters
 

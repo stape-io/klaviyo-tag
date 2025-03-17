@@ -11,7 +11,6 @@ const decodeUriComponent = require('decodeUriComponent');
 const getContainerVersion = require('getContainerVersion');
 const logToConsole = require('logToConsole');
 const getRequestHeader = require('getRequestHeader');
-const getType = require('getType');
 
 const eventPropertiesToIgnore = [
   'x-ga-protocol_version',
@@ -41,7 +40,7 @@ const actionTypes = {
   ACTIVE_ON_SITE: 'active_on_site',
   CREATE_OR_UPDATE_PROFILE: 'createOrUpdateProfile'
 };
-const klaviyoApiRevision = '2024-06-15';
+const klaviyoApiRevision = '2025-01-15';
 
 const isLoggingEnabled = determinateIsLoggingEnabled();
 const traceId = isLoggingEnabled ? getRequestHeader('trace-id') : undefined;
@@ -74,37 +73,31 @@ function sendEvent() {
   if (!hasUserIdentificationData(klaviyoEventData)) {
     return data.gtmOnSuccess();
   }
-  
+
   const url = 'https://a.klaviyo.com/api/events/';
 
-  if (isLoggingEnabled) {
-    logToConsole(
-      JSON.stringify({
-        Name: 'Klaviyo',
-        Type: 'Request',
-        TraceId: traceId,
-        EventName: eventNameLogs,
-        RequestMethod: 'POST',
-        RequestUrl: url,
-        RequestBody: klaviyoEventData
-      })
-    );
-  }
+  log({
+    Name: 'Klaviyo',
+    Type: 'Request',
+    TraceId: traceId,
+    EventName: eventNameLogs,
+    RequestMethod: 'POST',
+    RequestUrl: url,
+    RequestBody: klaviyoEventData
+  });
 
   sendHttpRequest(
     url,
     (statusCode, headers, body) => {
-      logToConsole(
-        JSON.stringify({
-          Name: 'Klaviyo',
-          Type: 'Response',
-          TraceId: traceId,
-          EventName: eventNameLogs,
-          ResponseStatusCode: statusCode,
-          ResponseHeaders: headers,
-          ResponseBody: body
-        })
-      );
+      log({
+        Name: 'Klaviyo',
+        Type: 'Response',
+        TraceId: traceId,
+        EventName: eventNameLogs,
+        ResponseStatusCode: statusCode,
+        ResponseHeaders: headers,
+        ResponseBody: body
+      });
 
       if (!data.useOptimisticScenario) {
         if (statusCode >= 200 && statusCode < 300) {
@@ -150,7 +143,7 @@ function addToList() {
       }
     }
   };
-  
+
   const subscriptions = {};
   if (data.subscribeToMarketingEmails) {
     subscriptions.email = {
@@ -165,42 +158,32 @@ function addToList() {
         consent: 'SUBSCRIBED'
       }
     };
-    let phone = '';
-    if (data.phone) {
-      phone = data.phone;
-    }
-    addToListData.data.attributes.profiles.data[0].attributes.phone_number = phone;
+    addToListData.data.attributes.profiles.data[0].attributes.phone_number = data.phone || '';
   }
   addToListData.data.attributes.profiles.data[0].attributes.subscriptions = subscriptions;
 
-  if (isLoggingEnabled) {
-    logToConsole(
-      JSON.stringify({
-        Name: 'Klaviyo',
-        Type: 'Request',
-        TraceId: traceId,
-        EventName: 'add_to_list',
-        RequestMethod: 'POST',
-        RequestUrl: url,
-        RequestBody: addToListData
-      })
-    );
-  }
+  log({
+    Name: 'Klaviyo',
+    Type: 'Request',
+    TraceId: traceId,
+    EventName: 'add_to_list',
+    RequestMethod: 'POST',
+    RequestUrl: url,
+    RequestBody: addToListData
+  });
 
   sendHttpRequest(
     url,
     (statusCode, headers, body) => {
-      logToConsole(
-        JSON.stringify({
-          Name: 'Klaviyo',
-          Type: 'Response',
-          TraceId: traceId,
-          EventName: 'add_to_list',
-          ResponseStatusCode: statusCode,
-          ResponseHeaders: headers,
-          ResponseBody: body
-        })
-      );
+      log({
+        Name: 'Klaviyo',
+        Type: 'Response',
+        TraceId: traceId,
+        EventName: 'add_to_list',
+        ResponseStatusCode: statusCode,
+        ResponseHeaders: headers,
+        ResponseBody: body
+      });
 
       if (!data.useOptimisticScenario) {
         if (statusCode >= 200 && statusCode < 300) {
@@ -220,39 +203,33 @@ function addToList() {
 
 function createOrUpdateProfile() {
   const url = 'https://a.klaviyo.com/api/profile-import/';
-  
+
   const updateProfileData = {
     data: getProfileData()
   };
-  
-  if (isLoggingEnabled) {
-    logToConsole(
-      JSON.stringify({
-        Name: 'Klaviyo',
-        Type: 'Request',
-        TraceId: traceId,
-        EventName: 'createOrUpdateProfile',
-        RequestMethod: 'POST',
-        RequestUrl: url,
-        RequestBody: updateProfileData
-      })
-    );
-  }
-  
+
+  log({
+    Name: 'Klaviyo',
+    Type: 'Request',
+    TraceId: traceId,
+    EventName: 'createOrUpdateProfile',
+    RequestMethod: 'POST',
+    RequestUrl: url,
+    RequestBody: updateProfileData
+  });
+
   sendHttpRequest(
     url,
     (statusCode, headers, body) => {
-      logToConsole(
-        JSON.stringify({
-          Name: 'Klaviyo',
-          Type: 'Response',
-          TraceId: traceId,
-          EventName: 'createOrUpdateProfile',
-          ResponseStatusCode: statusCode,
-          ResponseHeaders: headers,
-          ResponseBody: body
-        })
-      );
+      log({
+        Name: 'Klaviyo',
+        Type: 'Response',
+        TraceId: traceId,
+        EventName: 'createOrUpdateProfile',
+        ResponseStatusCode: statusCode,
+        ResponseHeaders: headers,
+        ResponseBody: body
+      });
 
       if (!data.useOptimisticScenario) {
         if (statusCode >= 200 && statusCode < 300) {
@@ -450,10 +427,7 @@ function getViewedItems() {
 
 function updateViewedItems(viewedItems) {
   for (let key in viewedItems) {
-    if (
-      viewedItems[key].ItemId &&
-      makeString(viewedItems[key].ItemId) === eventData.ItemId
-    ) {
+    if (viewedItems[key].ItemId && makeString(viewedItems[key].ItemId) === eventData.ItemId) {
       viewedItems[key].Views = makeInteger(viewedItems[key].Views) + 1;
 
       return viewedItems;
@@ -492,20 +466,25 @@ function hasItem(arr, item) {
   for (let k in arr) {
     if (arr[k] === item) return true;
   }
-
   return false;
 }
 
 function buildRequestHeaders() {
   return {
-    'X-Forwarded-For': eventData.ip_override 
+    'X-Forwarded-For': eventData.ip_override
       ? eventData.ip_override.split(' ').join('').split(',')[0]
       : getRemoteAddress(),
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
+    'Content-Type': 'application/vnd.api+json',
+    Accept: 'application/vnd.api+json',
     Revision: klaviyoApiRevision,
     Authorization: 'Klaviyo-API-Key ' + data.apiKey
   };
+}
+
+function log(logObject) {
+  if (isLoggingEnabled) {
+    logToConsole(JSON.stringify(logObject));
+  }
 }
 
 function determinateIsLoggingEnabled() {

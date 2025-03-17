@@ -1,6 +1,6 @@
 homepage: "https://stape.io/"
 versions:
-  - sha: 891c878f77abc134bfec9f6ddf425f6655616a39
+  - sha: f72e6991c9dc7461c56101c48266c4fcea2c6285
     changeNotes: Update API to 2025-01-15.
   - sha: 0beb2843e3eabfe8493b570e3f976fb9dce40664
     changeNotes: Added Create or Update Profile option. Added some tests.

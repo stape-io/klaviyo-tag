@@ -47,6 +47,10 @@ const traceId = isLoggingEnabled ? getRequestHeader('trace-id') : undefined;
 
 const eventData = getAllEventData();
 
+if (!isConsentGivenOrNotRequired()) {
+  return data.gtmOnSuccess();
+}
+
 switch (data.type) {
   case actionTypes.ADD_TO_LIST:
     addToList();
@@ -485,6 +489,13 @@ function log(logObject) {
   if (isLoggingEnabled) {
     logToConsole(JSON.stringify(logObject));
   }
+}
+
+function isConsentGivenOrNotRequired() {
+  if (data.adStorageConsent !== 'required') return true;
+  if (eventData.consent_state) return !!eventData.consent_state.ad_storage;
+  const xGaGcs = eventData['x-ga-gcs'] || ''; // x-ga-gcs is a string like "G110"
+  return xGaGcs[2] === '1';
 }
 
 function determinateIsLoggingEnabled() {

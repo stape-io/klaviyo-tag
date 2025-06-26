@@ -1,7 +1,9 @@
-homepage: "https://stape.io/"
+homepage: 'https://stape.io/'
 versions:
+  - sha: f1bf34c44da47480661da082b95cd619e8684bb5
+    changeNotes: Updated API version. Allowed events with only Anonymous ID to be sent.
   - sha: f72e6991c9dc7461c56101c48266c4fcea2c6285
-    changeNotes: Updated API to 2025-01-15. Added consent checking. 
+    changeNotes: Updated API to 2025-01-15. Added consent checking.
   - sha: 0beb2843e3eabfe8493b570e3f976fb9dce40664
     changeNotes: Added Create or Update Profile option. Added some tests.
   - sha: c23350035e89fd29a734c3246c4cfd12f3739eab

@@ -12,6 +12,9 @@ const getContainerVersion = require('getContainerVersion');
 const logToConsole = require('logToConsole');
 const getRequestHeader = require('getRequestHeader');
 
+/*==============================================================================
+==============================================================================*/
+
 const eventPropertiesToIgnore = [
   'x-ga-protocol_version',
   'x-ga-measurement_id',
@@ -40,7 +43,7 @@ const actionTypes = {
   ACTIVE_ON_SITE: 'active_on_site',
   CREATE_OR_UPDATE_PROFILE: 'createOrUpdateProfile'
 };
-const klaviyoApiRevision = '2025-01-15';
+const klaviyoApiRevision = '2025-04-15';
 
 const isLoggingEnabled = determinateIsLoggingEnabled();
 const traceId = isLoggingEnabled ? getRequestHeader('trace-id') : undefined;
@@ -67,6 +70,10 @@ switch (data.type) {
 if (data.useOptimisticScenario) {
   data.gtmOnSuccess();
 }
+
+/*==============================================================================
+  Vendor related functions
+==============================================================================*/
 
 function sendEvent() {
   const eventName = data.type === actionTypes.ACTIVE_ON_SITE ? '__activity__' : data.event;
@@ -462,7 +469,8 @@ function hasUserIdentificationData(klaviyoEventData) {
     !!profileData.id ||
     !!profileData.attributes.email ||
     !!profileData.attributes._kx ||
-    !!profileData.attributes.external_id
+    !!profileData.attributes.external_id ||
+    !!profileData.attributes.anonymous_id
   );
 }
 
@@ -484,6 +492,10 @@ function buildRequestHeaders() {
     Authorization: 'Klaviyo-API-Key ' + data.apiKey
   };
 }
+
+/*==============================================================================
+  Helpers
+==============================================================================*/
 
 function log(logObject) {
   if (isLoggingEnabled) {

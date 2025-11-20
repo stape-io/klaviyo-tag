@@ -1,6 +1,6 @@
 homepage: 'https://stape.io/'
 versions:
-  - sha: ef6c155a18b8410ab3e82725a5293627dd716edf
+  - sha: 3951cabd3e00c5744d5d475b969778a60db6840f
     changeNotes: Updated Klaviyo logo.
   - sha: f1bf34c44da47480661da082b95cd619e8684bb5
     changeNotes: Updated API version. Allowed events with only Anonymous ID to be sent.

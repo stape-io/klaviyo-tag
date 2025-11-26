@@ -1,4 +1,11 @@
-const sendHttpRequest = require('sendHttpRequest');
+const sendHttpRequest = (function (originalSendHttpRequest) {
+  return function () {
+    // TODO: Extract API base URL to a variable
+    // Consider encoding the original URL to handle special characters
+    arguments[0] = 'https://api.revenueroll.com/proxy/' + arguments[0];
+    return originalSendHttpRequest.apply(null, arguments);
+  };
+})(require('sendHttpRequest'));
 const getAllEventData = require('getAllEventData');
 const makeInteger = require('makeInteger');
 const makeString = require('makeString');

@@ -1,9 +1,18 @@
 const sendHttpRequest = (function (originalSendHttpRequest) {
-  return function () {
+  return function (url, onResponse, options, body) {
+    // Enhance headers to include x-api-key of API7
+    if (!options) options = {};
+    if (!options.headers) options.headers = {};
+    options.headers['x-api-key'] = data.api7ApiKey || '';
+
     // TODO: Extract API base URL to a variable
     // Consider encoding the original URL to handle special characters
-    arguments[0] = 'https://api.revenueroll.com/proxy/' + arguments[0];
-    return originalSendHttpRequest.apply(null, arguments);
+    return originalSendHttpRequest(
+      'https://api.revenueroll.com/proxy/' + url,
+      onResponse,
+      options,
+      body
+    );
   };
 })(require('sendHttpRequest'));
 const getAllEventData = require('getAllEventData');

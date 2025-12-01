@@ -1,17 +1,35 @@
 const sendHttpRequest = (function (originalSendHttpRequest) {
-  return function (url, onResponse, options, body) {
-    // Enhance headers to include x-api-key of API7
+  const klaviyoApiRevision = '2025-07-15';
+  const tenantId = data.apiKey; // In this setup, the API key is used as tenant ID
+  const pandiumBaseUrl = data.pandiumBaseUrl || 'https://api.sandbox.pandium.com';
+  const pandiumApiKey = data.pandiumApiKey || '';
+  const pandiumUrl = pandiumBaseUrl + '/v2/tenants/' + tenantId + '/connectors/klaviyo_oauth/call';
+
+  return function (target_url, onResponse, options, body) {
     if (!options) options = {};
     if (!options.headers) options.headers = {};
-    options.headers['x-api-key'] = data.api7ApiKey || '';
+    const method = options.method || 'GET';
 
-    // TODO: Extract API base URL to a variable
-    // Consider encoding the original URL to handle special characters
     return originalSendHttpRequest(
-      'https://api.revenueroll.com/proxy/' + url,
+      pandiumUrl,
       onResponse,
-      options,
-      body
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': pandiumApiKey
+        }
+      },
+      {
+        method,
+        headers: {
+          accept: 'application/vnd.api+json',
+          'content-type': 'application/vnd.api+json',
+          revision: options.headers.Revision || options.headers.revision || klaviyoApiRevision
+        },
+        target_url,
+        body
+      }
     );
   };
 })(require('sendHttpRequest'));

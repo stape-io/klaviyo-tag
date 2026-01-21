@@ -1,4 +1,5 @@
 homepage: 'https://stape.io/'
+documentation: 'https://github.com/stape-io/klaviyo-tag'
 versions:
   - sha: 3951cabd3e00c5744d5d475b969778a60db6840f
     changeNotes: Updated Klaviyo logo.

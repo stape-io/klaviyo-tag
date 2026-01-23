@@ -43,7 +43,7 @@ const actionTypes = {
   ACTIVE_ON_SITE: 'active_on_site',
   CREATE_OR_UPDATE_PROFILE: 'createOrUpdateProfile'
 };
-const klaviyoApiRevision = '2025-04-15';
+const klaviyoApiRevision = '2026-01-15';
 
 const isLoggingEnabled = determinateIsLoggingEnabled();
 const traceId = isLoggingEnabled ? getRequestHeader('trace-id') : undefined;

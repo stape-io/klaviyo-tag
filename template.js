@@ -1,16 +1,16 @@
-const sendHttpRequest = require('sendHttpRequest');
+const decodeUriComponent = require('decodeUriComponent');
 const getAllEventData = require('getAllEventData');
-const makeInteger = require('makeInteger');
-const makeString = require('makeString');
+const getCookieValues = require('getCookieValues');
+const getContainerVersion = require('getContainerVersion');
+const getRemoteAddress = require('getRemoteAddress');
+const getRequestHeader = require('getRequestHeader');
 const getTimestampMillis = require('getTimestampMillis');
 const JSON = require('JSON');
-const getRemoteAddress = require('getRemoteAddress');
-const getCookieValues = require('getCookieValues');
-const setCookie = require('setCookie');
-const decodeUriComponent = require('decodeUriComponent');
-const getContainerVersion = require('getContainerVersion');
 const logToConsole = require('logToConsole');
-const getRequestHeader = require('getRequestHeader');
+const makeInteger = require('makeInteger');
+const makeString = require('makeString');
+const sendHttpRequest = require('sendHttpRequest');
+const setCookie = require('setCookie');
 
 /*==============================================================================
 ==============================================================================*/
@@ -43,7 +43,7 @@ const actionTypes = {
   ACTIVE_ON_SITE: 'active_on_site',
   CREATE_OR_UPDATE_PROFILE: 'createOrUpdateProfile'
 };
-const klaviyoApiRevision = '2025-04-15';
+const klaviyoApiRevision = '2026-01-15';
 
 const isLoggingEnabled = determinateIsLoggingEnabled();
 const traceId = isLoggingEnabled ? getRequestHeader('trace-id') : undefined;

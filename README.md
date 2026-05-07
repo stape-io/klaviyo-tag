@@ -22,3 +22,6 @@ A more detailed description of [how to set up the Klaviyo tag in the sGTM](https
 ## Open Source
 
 Klaviyo Tag for GTM Server Side is developed and maintained by [Stape Team](https://stape.io/) under the Apache 2.0 license.
+
+### GTM Gallery Status
+🟢 [Listed](https://tagmanager.google.com/gallery/#/owners/stape-io/templates/klaviyo-tag)

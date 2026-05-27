@@ -1,6 +1,8 @@
 homepage: 'https://stape.io/'
 documentation: 'https://github.com/stape-io/klaviyo-tag'
 versions:
+  - sha: e669a1bf419d0fe4b275c7e2ca551aa44a59d908
+    changeNotes: Logging removal.
   - sha: 129e165444888c41a660fd5103723ceca17b0ec7
     changeNotes: Updated consent section. Updated API to 2026-01-15.
   - sha: 3951cabd3e00c5744d5d475b969778a60db6840f

@@ -1,12 +1,9 @@
 const decodeUriComponent = require('decodeUriComponent');
 const getAllEventData = require('getAllEventData');
 const getCookieValues = require('getCookieValues');
-const getContainerVersion = require('getContainerVersion');
 const getRemoteAddress = require('getRemoteAddress');
-const getRequestHeader = require('getRequestHeader');
 const getTimestampMillis = require('getTimestampMillis');
 const JSON = require('JSON');
-const logToConsole = require('logToConsole');
 const makeInteger = require('makeInteger');
 const makeString = require('makeString');
 const sendHttpRequest = require('sendHttpRequest');
@@ -14,6 +11,13 @@ const setCookie = require('setCookie');
 
 /*==============================================================================
 ==============================================================================*/
+
+const API_VERSION = '2026-04-15';
+const eventData = getAllEventData();
+
+if (!isConsentGivenOrNotRequired()) {
+  return data.gtmOnSuccess();
+}
 
 const eventPropertiesToIgnore = [
   'x-ga-protocol_version',
@@ -36,23 +40,12 @@ const eventPropertiesToIgnore = [
   'screen_resolution',
   'x-ga-mp2-user_properties'
 ];
-
 const actionTypes = {
   ADD_TO_LIST: 'addToList',
   EVENT: 'event',
   ACTIVE_ON_SITE: 'active_on_site',
   CREATE_OR_UPDATE_PROFILE: 'createOrUpdateProfile'
 };
-const klaviyoApiRevision = '2026-01-15';
-
-const isLoggingEnabled = determinateIsLoggingEnabled();
-const traceId = isLoggingEnabled ? getRequestHeader('trace-id') : undefined;
-
-const eventData = getAllEventData();
-
-if (!isConsentGivenOrNotRequired()) {
-  return data.gtmOnSuccess();
-}
 
 switch (data.type) {
   case actionTypes.ADD_TO_LIST:
@@ -77,8 +70,6 @@ if (data.useOptimisticScenario) {
 
 function sendEvent() {
   const eventName = data.type === actionTypes.ACTIVE_ON_SITE ? '__activity__' : data.event;
-  const eventNameLogs = data.type === actionTypes.ACTIVE_ON_SITE ? 'page_view' : data.event;
-
   const klaviyoEventData = getKlaviyoEventData(eventName);
 
   if (!hasUserIdentificationData(klaviyoEventData)) {
@@ -86,30 +77,9 @@ function sendEvent() {
   }
 
   const url = 'https://a.klaviyo.com/api/events/';
-
-  log({
-    Name: 'Klaviyo',
-    Type: 'Request',
-    TraceId: traceId,
-    EventName: eventNameLogs,
-    RequestMethod: 'POST',
-    RequestUrl: url,
-    RequestBody: klaviyoEventData
-  });
-
   sendHttpRequest(
     url,
     (statusCode, headers, body) => {
-      log({
-        Name: 'Klaviyo',
-        Type: 'Response',
-        TraceId: traceId,
-        EventName: eventNameLogs,
-        ResponseStatusCode: statusCode,
-        ResponseHeaders: headers,
-        ResponseBody: body
-      });
-
       if (!data.useOptimisticScenario) {
         if (statusCode >= 200 && statusCode < 300) {
           data.gtmOnSuccess();
@@ -173,29 +143,9 @@ function addToList() {
   }
   addToListData.data.attributes.profiles.data[0].attributes.subscriptions = subscriptions;
 
-  log({
-    Name: 'Klaviyo',
-    Type: 'Request',
-    TraceId: traceId,
-    EventName: 'add_to_list',
-    RequestMethod: 'POST',
-    RequestUrl: url,
-    RequestBody: addToListData
-  });
-
   sendHttpRequest(
     url,
     (statusCode, headers, body) => {
-      log({
-        Name: 'Klaviyo',
-        Type: 'Response',
-        TraceId: traceId,
-        EventName: 'add_to_list',
-        ResponseStatusCode: statusCode,
-        ResponseHeaders: headers,
-        ResponseBody: body
-      });
-
       if (!data.useOptimisticScenario) {
         if (statusCode >= 200 && statusCode < 300) {
           data.gtmOnSuccess();
@@ -219,29 +169,9 @@ function createOrUpdateProfile() {
     data: getProfileData()
   };
 
-  log({
-    Name: 'Klaviyo',
-    Type: 'Request',
-    TraceId: traceId,
-    EventName: 'createOrUpdateProfile',
-    RequestMethod: 'POST',
-    RequestUrl: url,
-    RequestBody: updateProfileData
-  });
-
   sendHttpRequest(
     url,
     (statusCode, headers, body) => {
-      log({
-        Name: 'Klaviyo',
-        Type: 'Response',
-        TraceId: traceId,
-        EventName: 'createOrUpdateProfile',
-        ResponseStatusCode: statusCode,
-        ResponseHeaders: headers,
-        ResponseBody: body
-      });
-
       if (!data.useOptimisticScenario) {
         if (statusCode >= 200 && statusCode < 300) {
           data.gtmOnSuccess();
@@ -488,7 +418,7 @@ function buildRequestHeaders() {
       : getRemoteAddress(),
     'Content-Type': 'application/vnd.api+json',
     Accept: 'application/vnd.api+json',
-    Revision: klaviyoApiRevision,
+    Revision: API_VERSION,
     Authorization: 'Klaviyo-API-Key ' + data.apiKey
   };
 }
@@ -497,37 +427,9 @@ function buildRequestHeaders() {
   Helpers
 ==============================================================================*/
 
-function log(logObject) {
-  if (isLoggingEnabled) {
-    logToConsole(JSON.stringify(logObject));
-  }
-}
-
 function isConsentGivenOrNotRequired() {
   if (data.adStorageConsent !== 'required') return true;
   if (eventData.consent_state) return !!eventData.consent_state.ad_storage;
   const xGaGcs = eventData['x-ga-gcs'] || ''; // x-ga-gcs is a string like "G110"
   return xGaGcs[2] === '1';
-}
-
-function determinateIsLoggingEnabled() {
-  const containerVersion = getContainerVersion();
-  const isDebug = !!(
-    containerVersion &&
-    (containerVersion.debugMode || containerVersion.previewMode)
-  );
-
-  if (!data.logType) {
-    return isDebug;
-  }
-
-  if (data.logType === 'no') {
-    return false;
-  }
-
-  if (data.logType === 'debug') {
-    return isDebug;
-  }
-
-  return data.logType === 'always';
 }

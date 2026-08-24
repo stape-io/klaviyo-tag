@@ -1,6 +1,8 @@
 homepage: 'https://stape.io/'
 documentation: 'https://github.com/stape-io/klaviyo-tag'
 versions:
+  - sha: e66d6b26dd64f3a0798459229ecbeb154ab02394
+    changeNotes: Added fallback to __kla_id cookie when reading the Klaviyo Exchange ID value.
   - sha: e669a1bf419d0fe4b275c7e2ca551aa44a59d908
     changeNotes: Logging removal.
   - sha: 129e165444888c41a660fd5103723ceca17b0ec7

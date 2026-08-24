@@ -1,45 +1,26 @@
-const decodeUriComponent = require('decodeUriComponent');
+const fromBase64 = require('fromBase64');
 const getAllEventData = require('getAllEventData');
 const getCookieValues = require('getCookieValues');
 const getRemoteAddress = require('getRemoteAddress');
+const getRequestHeader = require('getRequestHeader');
 const getTimestampMillis = require('getTimestampMillis');
+const getType = require('getType');
 const JSON = require('JSON');
+const logToConsole = require('logToConsole');
 const makeInteger = require('makeInteger');
 const makeString = require('makeString');
+const parseUrl = require('parseUrl');
 const sendHttpRequest = require('sendHttpRequest');
 const setCookie = require('setCookie');
 
 /*==============================================================================
 ==============================================================================*/
 
-const API_VERSION = '2026-04-15';
+const API_VERSION = '2026-07-15';
 const eventData = getAllEventData();
 
-if (!isConsentGivenOrNotRequired()) {
-  return data.gtmOnSuccess();
-}
+if (shouldExitEarly(data, eventData)) return;
 
-const eventPropertiesToIgnore = [
-  'x-ga-protocol_version',
-  'x-ga-measurement_id',
-  'x-ga-gtm_version',
-  'x-ga-page_id',
-  'x-ga-system_properties',
-  'client_id',
-  'language',
-  'x-ga-request_count',
-  'ga_session_id',
-  'ga_session_number',
-  'x-ga-mp2-seg',
-  'page_location',
-  'page_referrer',
-  'page_title',
-  'ip_override',
-  'user_agent',
-  'x-ga-js_client_id',
-  'screen_resolution',
-  'x-ga-mp2-user_properties'
-];
 const actionTypes = {
   ADD_TO_LIST: 'addToList',
   EVENT: 'event',
@@ -73,7 +54,16 @@ function sendEvent() {
   const klaviyoEventData = getKlaviyoEventData(eventName);
 
   if (!hasUserIdentificationData(klaviyoEventData)) {
-    return data.gtmOnSuccess();
+    log({
+      Name: 'KlaviyoTag',
+      Type: 'Message',
+      EventName: 'Send Event',
+      Message: '🛑 [ERROR] Request was not sent.',
+      Reason:
+        'Klaviyo User ID, Email, External ID, Anonymous ID or Klaviyo Exchange ID (_kx) must be present to identify the user'
+    });
+    if (!data.useOptimisticScenario) data.gtmOnFailure();
+    return;
   }
 
   const url = 'https://a.klaviyo.com/api/events/';
@@ -81,11 +71,7 @@ function sendEvent() {
     url,
     (statusCode, headers, body) => {
       if (!data.useOptimisticScenario) {
-        if (statusCode >= 200 && statusCode < 300) {
-          data.gtmOnSuccess();
-        } else {
-          data.gtmOnFailure();
-        }
+        return statusCode >= 200 && statusCode < 300 ? data.gtmOnSuccess() : data.gtmOnFailure();
       }
     },
     {
@@ -147,11 +133,7 @@ function addToList() {
     url,
     (statusCode, headers, body) => {
       if (!data.useOptimisticScenario) {
-        if (statusCode >= 200 && statusCode < 300) {
-          data.gtmOnSuccess();
-        } else {
-          data.gtmOnFailure();
-        }
+        return statusCode >= 200 && statusCode < 300 ? data.gtmOnSuccess() : data.gtmOnFailure();
       }
     },
     {
@@ -173,11 +155,7 @@ function createOrUpdateProfile() {
     url,
     (statusCode, headers, body) => {
       if (!data.useOptimisticScenario) {
-        if (statusCode >= 200 && statusCode < 300) {
-          data.gtmOnSuccess();
-        } else {
-          data.gtmOnFailure();
-        }
+        return statusCode >= 200 && statusCode < 300 ? data.gtmOnSuccess() : data.gtmOnFailure();
       }
     },
     {
@@ -233,6 +211,27 @@ function getProfileData() {
 }
 
 function getProperties(eventName) {
+  const eventPropertiesToIgnore = [
+    'x-ga-protocol_version',
+    'x-ga-measurement_id',
+    'x-ga-gtm_version',
+    'x-ga-page_id',
+    'x-ga-system_properties',
+    'client_id',
+    'language',
+    'x-ga-request_count',
+    'ga_session_id',
+    'ga_session_number',
+    'x-ga-mp2-seg',
+    'page_location',
+    'page_referrer',
+    'page_title',
+    'ip_override',
+    'user_agent',
+    'x-ga-js_client_id',
+    'screen_resolution',
+    'x-ga-mp2-user_properties'
+  ];
   const klaviyoProperties = {};
 
   if (data.forwardAllProperties) {
@@ -276,6 +275,23 @@ function getProperties(eventName) {
   return klaviyoProperties;
 }
 
+function parseKx() {
+  const urlSearchParams = (parseUrl(eventData.page_location) || {}).searchParams;
+  const kxFromUrl = urlSearchParams && urlSearchParams['_kx'];
+  if (kxFromUrl) return kxFromUrl;
+
+  const kxFromStapeCookie = getCookieValues('stape_klaviyo_kx')[0];
+  if (kxFromStapeCookie) return kxFromStapeCookie;
+
+  const klaIdCookie = getCookieValues('__kla_id')[0];
+  if (klaIdCookie) {
+    const klaId = JSON.parse(fromBase64(klaIdCookie) || '{}');
+    if (getType(klaId) === 'object' && klaId['$exchange_id']) {
+      return klaId['$exchange_id'];
+    }
+  }
+}
+
 function getCustomerProperties() {
   const customerProperties = {
     properties: {}
@@ -284,18 +300,12 @@ function getCustomerProperties() {
   if (data.email) customerProperties.email = data.email;
   else if (eventData.email) customerProperties.email = eventData.email;
   else if (data.storeEmail) {
-    let emailCookie = getCookieValues('stape_klaviyo_email');
-    if (emailCookie.length) customerProperties.email = emailCookie[0];
+    const emailCookie = getCookieValues('stape_klaviyo_email')[0];
+    if (emailCookie) customerProperties.email = emailCookie;
   }
 
-  let url = eventData.page_location;
-  if (url && url.indexOf('_kx=') !== -1) {
-    let kx = url.split('_kx=')[1].split('&')[0];
-    if (kx) customerProperties['_kx'] = decodeUriComponent(kx);
-  } else {
-    let kxCookie = getCookieValues('stape_klaviyo_kx');
-    if (kxCookie.length) customerProperties['_kx'] = kxCookie[0];
-  }
+  const kx = parseKx();
+  if (kx) customerProperties['_kx'] = kx;
 
   if (eventData.page_referrer)
     customerProperties.properties['$last_referrer'] = eventData.page_referrer;
@@ -347,10 +357,10 @@ function storeCookie(name, value) {
 
 function getViewedItems() {
   let viewedItems = [];
-  const viewedItemsCookie = getCookieValues('stape_klaviyo_viewed_items');
+  const viewedItemsCookie = getCookieValues('stape_klaviyo_viewed_items')[0];
 
-  if (viewedItemsCookie.length && viewedItemsCookie[0]) {
-    viewedItems = JSON.parse(viewedItemsCookie[0]);
+  if (viewedItemsCookie) {
+    viewedItems = JSON.parse(viewedItemsCookie);
   }
 
   if (eventData.ItemId && eventData.Title) {
@@ -427,9 +437,33 @@ function buildRequestHeaders() {
   Helpers
 ==============================================================================*/
 
-function isConsentGivenOrNotRequired() {
+function isConsentGivenOrNotRequired(data, eventData) {
   if (data.adStorageConsent !== 'required') return true;
   if (eventData.consent_state) return !!eventData.consent_state.ad_storage;
   const xGaGcs = eventData['x-ga-gcs'] || ''; // x-ga-gcs is a string like "G110"
   return xGaGcs[2] === '1';
+}
+
+function getUrl(eventData) {
+  return eventData.page_location || getRequestHeader('referer') || eventData.page_referrer;
+}
+
+function shouldExitEarly(data, eventData) {
+  if (!isConsentGivenOrNotRequired(data, eventData)) {
+    data.gtmOnSuccess();
+    return true;
+  }
+
+  const url = getUrl(eventData);
+  if (url && url.lastIndexOf('https://gtm-msr.appspot.com/', 0) === 0) {
+    data.gtmOnSuccess();
+    return true;
+  }
+
+  return false;
+}
+
+function log(rawDataToLog) {
+  rawDataToLog.TraceId = getRequestHeader('trace-id');
+  logToConsole(JSON.stringify(rawDataToLog));
 }
